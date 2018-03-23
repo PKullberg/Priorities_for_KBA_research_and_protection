@@ -1,0 +1,9 @@
+This folder contains various raster files that area needed to run the zonation analyses and to produce the outputs. All rasters area in geographic coordinate system and have 1 arcminute resolution.
+
+Most of the files are produced using the scripts of this project, but some are produced during previous projects and detailed scripts for producing them are not contained within these documents.
+
+These files area:
+1. "CBIG_GlobalCellAreaR_r16c.tif": This file contains area (in km2) of 1 arc minute grid cells in geographic coordinate system (in km2).
+2. "CBIG_LandWater_r16b.tif": separates terrestrial areas from water bodies
+3. "continents_r16c.tif": Continents marked with integers 1-9.
+

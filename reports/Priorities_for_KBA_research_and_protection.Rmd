@@ -1,0 +1,807 @@
+---
+title: Using Key Biodiversity Areas to guide effective expansion of the global protected
+  area network
+author: "Peter Kullberg¹, Enrico Di Minin²³, Atte Moilanen²⁴"
+date: "March 19, 2018"
+output: 
+  word_document:
+      fig_caption: yes
+      reference_docx: cons_letters_style.docx
+bibliography: KBA_paper.bib
+csl: apa.csl
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache.lazy = TRUE)
+knitr::opts_chunk$set(dev = "tiff", dpi = 600)
+
+# base::options(scipen = 2, digits = 3) !!!!!! Not needed as the above should do the trick !!!!!!!!!!!!!!!!
+# formulate inline code outputs according to the apa standards
+knitr::knit_hooks$set(inline = function(x) {
+  if(!is.numeric(x)){ x } else { prettyNum(round(x, 2), big.mark = ",") }
+})
+```
+
+```{r caption_options, cache = F}
+# allow active inline references to tables and figures (works also with .odf files)
+source("../src/knitr_ref.R")
+
+# set caption prefixes for tables and figures
+options(figcap.prefix = "Fig.", figcap.sep = ":", figcap.prefix.highlight = "**")
+options(tabcap.prefix = "Table", tabcap.sep = ":", tabcap.prefix.highlight = "**")
+```
+
+```{r libraries, include=FALSE, cache = F}
+# remove unnecessary!
+library(foreign)
+library(raster)
+library(tidyverse)
+library(tmap)
+library(rgeos)
+library(tmaptools)
+library(pander)
+library(rworldmap)
+library(ggplot2)
+library(rgdal)
+
+# library(geosphere)
+
+# library(plotrix)
+# library(grid)
+# library(gridExtra)
+# library(readxl)
+# library(RColorBrewer)
+# library(kableExtra)
+```
+
+\n
+
+¹Department of Biosciences, FI-00014 University of Helsinki, Finland
+
+²Department of Geosciences and Geography, FI-00014 University of Helsinki, Finland
+
+³School of Life Sciences, University of KwaZulu-Natal, Durban, 4000, South Africa
+
+⁴Finnish Natural History Museum, FI-00014 University of Helsinki, Finland
+
+\n
+
+**Corresponding author:** peter.kullberg@helsinki.fi, tel. +358 50 3568102, Department of Biosciences, PO BOX 65 (Viikinkaari 1), 00014 University of Helsinki, FINLAND
+
+**Contact:** Atte moilanen, atte.moilanen@helsinki.fi; Enrico di Minin, enrico.di.minin@helsinki.fi
+
+\n
+  
+**Running head:** Priorities for KBA research and protection
+
+**Manuscript type:**  Conservation Letters, Letter
+
+**Key words:** Aichi target 11, conservation coverage, convention on biological diversity, comprehensiveness, representativeness, research priorities, spatial conservation prioritization, Zonation software
+
+**Word counts:** file total (xxxx), main text (xxxx), abstract (xxx),  Figures: x; Tables: x; References: xx
+
+##### Page Break
+
+## Summary
+Using spatial prioritization, we identify priority areas for the expansion of the global protected area network. We identify a set of unprotected key biodiversity areas (KBAs) that would efficiently complement the current protected area network in terms of terrestrial vertebrate coverage. We show that protecting a small fraction (0.36%) of terrestrial area within KBAs could increase conservation coverage of ranges of threatened vertebrates by on average 14.7 percentage points We also identify areas outside both the protected area and KBA networks that would further complement the priority KBAs. We call these areas research priorities, as they are areas that are likely to hold populations of species that are poorly protected or covered by KBAs, and where on-the-ground surveys might confirm suitability for KBA designation or protection. 
+
+**Key words:** Aichi target 11, conservation coverage, convention on biological diversity, comprehensiveness, representativeness, research priorities, spatial conservation prioritization, Zonation software 
+
+##### Page Break
+
+```{r, run_zonation}
+## Following code is for setting up the zonation runs
+
+# Get all gbif observations of species that have less than 5% of their range within PAs of KBAs
+# To run, the code requires list of wanted species that was produced beforehand
+source("src/fetch_gbif_observations")
+
+# creates spp files
+source("src/create_spp_files")
+
+# creates hierarchical masks and planning unit layer
+source("src/zonation_raster_files")
+
+# Runs zonatio conservation prioritization analyses.
+# WARNING: runnig these analyses will take many weeks even with moderately fast computers.
+# Sourcing this assumes: 
+  # - Linux sysstem with at ~30 GB ram and > 10 GB free discspace
+  # - zonation 4 installed and available system wide (https://github.com/cbig/zonation-core)
+  # - All files under the zruns folder set as shown in the github release xxx
+source("src/zonation_analyses")
+```
+
+## Introduction
+Protected areas are the cornerstone for halting the global biodiversity crisis [@UNEP-CBD2010]. While there has been a steady increase in the coverage of protected areas over the last decades [@UNEP-WCMC2016], further expansion is needed to halt the global extinction crisis [@Tittensor2014; @WWF2016]. A global biodiversity target recommends increase of terrestrial protected area coverage to 17% by 2020 [@UNEP-CBD2010]. As the need to act is urgent and resources are limited, prioritization of conservation actions is important both at local and global scales [@McCarthy2012; @Pouzols2014].
+
+Methods for identifying global priorities have ranged from straightforward species richness rankings [@Jenkins2013] to more complex prioritization methods that, in addition to biodiversity, also account for other factors such as costs or land-use change [@Butchart2015; @Pouzols2014; @Venter2014]. The sizes of analysis units have ranged from ecoregions down to 1 km² pixels [@Hoekstra2004b; @Myers2000; @Pouzols2014]. This has raised debate [@DiMarco2017; @Marechaux2016] as the ability of coarse scale analyses to inform on-the-ground planning is considered limited. On the other hand, the ability of global data to capture detailed local scale variation in high resolution analyses has been questioned [@Hurlbert2007a].
+
+Key Biodiversity Areas (KBA) are promoted by the IUCN as a means to identify "sites of importance for the global persistence of biodiversity" [@IUCN2016]. KBAs are established based on clearly defined rules against which individual sites are matched [@IUCN2016]. In contrast to global conservation priority analyses that usually consider all areas simultaneously and require spatial data across the full study area, the KBA method can be applied site by site and it only requires data that is locally available. On the other hand, being a local, site-based approach, KBAs cannot directly account for network-level factors, such as complementarity or the representativeness of the network as a whole [@Moilanen2009].
+
+According to IUCN guidelines, KBAs should be delineated so that they are manageable units, accounting for local ecological, physical and socio-economic contexts [@IUCN2016]. KBAs can also be expected to contain better quality habitat and harbor more species of conservation importance than the surrounding landscapes [@DiMarco2016]. Increasing KBA protection is generally considered to be critical to enhance species persistence [@Butchart2012a; @Butchart2015]. Indeed, one of the five main indicators of progress towards the Aichi target 11 is protected area coverage of KBAs [@BIP]. Nevertheless, a large proportion of KBAs remains unprotected [@Butchart2015]. Hence, unprotected KBAs are prime candidates for global protected area network expansion [@Butchart2012a; @Butchart2015].
+
+In this paper we explore the expansion of the global protected area network by combining KBAs as manageable conservation units with the ability of conservation prioritization software to find globally effective solutions. Using the Zonation software, we identify global conservation priority areas for expansion of the protected area network by highlighting a set of unprotected KBAs that, if protected, would efficiently complement the current protected area network in terms of terrestrial vertebrate coverage. To reduce uncertainty related to range maps, we used GBIF species observations [@GBIF2017] to upweight areas with confirmed sightings. By using KBAs as planning units, we aim to overcome some of the limitations that follow from identifying conservation priorities based on large unmanageable areas (ecoregions, 10 000 km² pixels) or pixels that are too small to capture ecological processes or deal with data uncertainties. We also compare the performance of the priority KBA approach for protected area expansion to unrestricted protected area expansion. Finally, we identify conservation priority areas outside the protected area and KBA networks that would further complement the priority KBAs. We call these areas as research priorities as they are areas that are likely to hold populations of species not yet well covered by protection or KBAs. Compared to the priority KBAs, these research priorities would benefit from verification of species occurrences and socio-economic factors before prospective  conservation areas are delineated.
+
+## Methods
+To identify priority KBAs, we used range maps of threatened (Critically Endangered, Endangered or Vulnerable) terrestrial mammals, birds and amphibians (n = `r (sum(terrestrial_threatened_dd_and_gbif_spp_status$Status != "DD", na.rm = T))` species) in the IUCN Red List [@IUCN2016]. In the research priority analysis we also accounted for Data Deficient species (n = `r (sum(terrestrial_threatened_dd_and_gbif_spp_status$Status == "DD", na.rm = T))` species). For bird species with different seasonal ranges, we included all ranges as separate units in the analyses to promote coverage of all areas that are important for the survival of the species.
+
+We downloaded all GBIF observations of species that are not well covered by the KBA and protected area networks (less than 5% of range covered, n = 879). We only used observations that were made after 1990, because they in general have better quality and are more informative about the current situation [@Ficetola2014]. We made 25 km buffers around occurrence points of each species to account for the fact that species are likely to be found somewhere nearby the exact observation locations. We intersected the buffered occurrence layers with species ranges to remove observations outside natural ranges. We used these layers as an additional input in the research priority analysis in order to upweight areas with confirmed species presences. Altogether there were 7,555 observations of 104 species, with a median of 4 observation per species [@GBIF2017] (Table S1,  Fig. S1).
+
+We extracted protected area data from the World Database on Protected Areas [@IUCNUNEP-WCMC2016] and KBA data from World Database of Key Biodiversity Areas [@KBAPartnership2016]. We included all designated terrestrial protected areas and KBAs with polygonal representation. Unprotected KBAs were identified by overlaying the KBA and protected area rasters. We extracted establishment criteria for each KBA to explore whether the priority KBAs had more emphasis on occurrence of threatened species than other reasons triggering KBA definition. This could be expected because we used the range maps of threatened species as primary data in the analysis.
+
+We rasterized all spatial data using the intersect method, geographic coordinate system and 1 arc-minute (equal to 1.85 km at the equator) resolution. Such fine resolution was needed so that the locations and shapes of protected areas and KBAs could be approximated with reasonable accuracy. This raster resolution should not be confused with the size of planning units in spatial analysis, which was determined by the size of the unprotected KBAs. All data processing was performed with R v. 3.4.1 [@RCoreTeam2017]. The code for data manipulation, analysis and production of this document is provided in www.provided/later.xxx.
+
+We used the Zonation v4 conservation prioritization software to produce a global priority ranking of the unprotected KBAs [@DiMinin2014, @Moilanen2014]. The analyses were run using the additive benefit function method, which aims to minimize the aggregate extinction risk over all species [@Moilanen2007]. The KBA priority analysis covered all terrestrial areas, but used a selection hierarchy, where highest priority areas were forced to be within protected areas, second highest priorities within KBAs and finally in the rest of the landscape. This hierarchical approach allowed us to identify priority areas for filling gaps within the KBA network, while at the same time accounting full species ranges. In practice, high priority was assigned to KBAs that area-efficiently complement the current protected area network in terms of balanced coverage of threatened species. As research priority areas, we identified the highest-ranking areas that would, jointly with protected areas and KBAs, increase terrestrial conservation coverage to 17%. We decided not to account for threats or cost in our analyses, because we wanted to follow the approach taken by the KBA method and focus purely on identifying sites that are important for species persistence at the global level (IUCN 2016). Analysis variants are summarized in `r tabRef("variant_table")`.
+
+```{r variant_table2, warning = T}
+
+## Create a table showing the analysis variants
+# variant names
+var1 <- "Free PA expansion"
+var2 <- "Priority KBAs for PA expansion"
+var3 <- "Free priority areas within KBAs"
+var4 <- "Research priority areas"
+
+# Variant purpose
+purp1 <- "Create a pixel-based PA expansion ranking to evaluate the performance of the KBA restricted solution"
+purp2 <- "Rank KBAs in terms of global conservation priority"
+purp3 <- "Create a pixel-based ranking of KBA areas to evaluate the performance of the KBA restricted solution"
+purp4 <- "Identify research priority areas for potential expansion of the KBA network and analyze the effect of treating KBAs as single planning entities"
+
+# Data
+data1 <- "Threatened species"
+data2 <- "Threatened species"
+data3 <- "Threatened species"
+data4 <- "Threatened species, data deficient species, and GBIF observations of gap species"
+
+# Analysis units
+units1 <- "1' pixels"
+units2 <- "unprotected KBAs"
+units3 <- "1' pixels"
+units4 <- "1' pixels"
+
+# Analysis hierarchy
+hier1 <- "1. PAs, \n 2. rest of the landscape"
+hier2 <- "1. PAs, \n 2. KBAs, \n 3. rest of the landscape"
+hier3 <- "1. PAs, \n 2. KBAs, \n 3. rest of the landscape"
+hier4 <- "1. PAs, \n 2. KBAs, \n 3. rest of the landscape"
+
+table1 <- data.frame(Variant_name = c(var1, var2, var3, var4), Purpose = c(purp1, purp2, purp3, purp4), Data = c(data1, data2, data3, data4), Planning_units = c(units1, units2, units3, units4), Ranking_hierarchy = c(hier1, hier2, hier3, hier4))
+
+# this produces a shity table, but I can't fix it in any reasonale time. For some reasons the line breaks do not work and the table is looking bad in a word doc.
+panderOptions('table.split.table', Inf)
+panderOptions('table.alignment.default', "left")
+panderOptions('keep.line.breaks', TRUE)
+set.caption(tabRef("variant_table", "Zonation analysis variants"))
+pander(table1, format = "html", col.names = c("Variant name", "Data", "Purpose", "Planning \n units", "Ranking hierarchy"))
+
+# knitr::kable(table1, format = "html", col.names = c("Variant name", "Purpose", "Planning \n units", "Removal hierarchy"))  %>%
+#   kable_styling()
+
+```
+
+## Results
+
+```{r coverage_statistics, include = FALSE}
+# In this block:
+#  - Statistics for PA and KBA coverages are calculated.
+
+## Basic Data, rasterized to one minute resolution
+KBA_mask <- raster("../data/masks/KBA_raster_2016_full_threatened_included.tif") # KBA = 1 
+PA_mask <- raster("../data/masks/WDPA_raster_2016_nofw_all_included.tif") # WDPA = 1
+unprotected_KBA <- raster("../data/masks/non_protected_KBAs_2016_threatened_included.tif")
+cell_size <- raster("../data/masks/CBIG_GlobalCellAreaR_r16c.tif") # cell area in km2
+land_mask <- raster("../data/masks/CBIG_LandWater_r16b.tif") # land = 1, changed this to land water > large freswater also removed
+conts <- raster("../data/continents/continents_r16c.tif") ## continents marked with numeric 1:8
+
+# Number of KBAs
+## Use the dbf-file to count the number of KBAs (the rasters in the analyses are rasterized from this shp). 
+## In the raster file there area less individual KBA IDs as some of the areas overlap and the smaller areas are masked out (the set below includes also marine KBAs).
+KBA_dbf <- read.dbf("../data/KBAsGlobal_2016_4/Global_KBA_poly.dbf")
+KBAs_raster <- unique(raster("../data/masks/KBA_ID_raster_2016_only_terrestrials.tif"))
+
+## KBA coverage of all land / of non-antarctic land
+cont_land_mask_no_ant <- mask(land_mask, conts, maskvalue = 2, filename = "../data/masks/cont_land_mask_no_ant.tif", options = "COMPRESS=DEFLATE", datatype = "INT2S", overwrite = T)
+ter_area <- zonal(cell_size, cont_land_mask_no_ant, fun = "sum")[ ,2]
+land_maks_area_all <- zonal(cell_size, land_mask, fun = "sum")[ ,2] # All terrestrial areas
+
+KBA_area <- zonal(cell_size, KBA_mask, fun = "sum")[,2]
+KBA_coverage_all <- KBA_area / land_maks_area_all * 100
+
+## % of kbas protected
+unprotected_KBA_area <- zonal(cell_size, unprotected_KBA, fun = "sum")[,2]
+KBAs_protected <- 100 - unprotected_KBA_area / KBA_area * 100
+
+## % of terrestrial areas coverred by WDPA
+WDPA_area <- zonal(cell_size, PA_mask, fun = "sum")[,2]
+PA_coverage_all <- WDPA_area / land_maks_area_all * 100
+unprotected_kba_of_all <- unprotected_KBA_area / land_maks_area_all * 100
+```
+
+```{r kba_protection_priority_data, echo = F, include = F}
+# In this block:
+# - The original priority maps are cut and rescaled, to contain only unprotected KBAs.
+# - Binary maps of areas containng 10% of the best unprotected KBAs is produced.
+# - Density for the priority areas is calcualted
+
+# Function for clipping and rescaling the ranks. Inputs: rank raster, cutting mask. Out: raster (which is saved to the same folder as the original rank as a side effect) 
+source("../src/clip_rank.R")
+
+## clip and rescale results to unprotected  KBAs
+unprotected_KBA_z <- raster("../data/masks/non_protected_KBAs_2016.tif") # this used to be this: unprotected_KBA_z <- raster("../data/masks/non_protected_KBAs_2016_threatened_included.tif") check how/if results area affected!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+rank2 <- raster("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/2_kba_priority_hm2_plu.ABF_M.rank.compressed.tif")
+KBA_ranking <- clip_rank(ir = rank2, br = unprotected_KBA_z)
+
+## make top 10 % binary raster
+top_10_KBAs <- reclassify(KBA_ranking, matrix(c(0, 0.9, NA, 0.9, 1, 1), 2, 3, byrow = T), filename = "../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_2016.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T , datatype = "INT2S")
+
+# create a density map for PA expansion in KBAs, map needs to be projected before density raster can be made
+proj4string(top_10_KBAs) <- CRS("+init=epsg:4326") 
+top_10_KBAs_proj <- projectRaster(from = top_10_KBAs, crs = "+proj=eck4 +over +ellps=WGS84", filename = "../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_2016_proj.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T )
+top_10_KBAs_proj_points <- rasterToPoints(top_10_KBAs_proj, spatial = T)
+eckert_world <- spTransform(getMap(), CRS("+proj=eck4 +over")) # This is needed only for the bounding box
+top_10_KBAs_proj_points@bbox <- eckert_world@bbox
+ 
+top_10_KBAs_density <- smooth_map(top_10_KBAs_proj_points, to.Raster = T, bandwidth = c(200,200))[["raster"]]
+writeRaster(top_10_KBAs_density, filename = "../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_density.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T)
+
+# What is the proportion of top 10% expansion of the zonation analysis landscape? This is needed later to get similar sized ares.
+kba_expansion_area <- zonal(cell_size, top_10_KBAs, fun = "sum")
+not_protected_z <- raster("../data/masks/not_protected_z.tif") # size of the area that is not within WDPA, in zonation analysis
+not_protected_area <- zonal(cell_size, not_protected_z, fun = "sum")
+not_protected_expansion_pr <- 1 - (kba_expansion_area[2,2] / not_protected_area[1,2])
+
+### top 10% free expansion areas ###
+PA_priority_free <- raster("../zruns/2016_data/1_free_exp_hm1/1_free_exp_hm1_out/1_free_exp_hm1.ABF_M.rank.compressed.tif")
+PA_priority_free_expansion <- clip_rank(PA_priority_free, not_protected_z)
+
+# Make a binary expansion map which has same size than the  previously calcuated top 10% of KBAs
+free_pa_expansion10_binary <- reclassify(PA_priority_free_expansion, matrix(c(0, (not_protected_expansion_pr), NA, (not_protected_expansion_pr), 1, 1), 2,3, byrow = T),  filename = "../zruns/2016_data/1_free_exp_hm1/1_free_exp_hm1_out/free_PA_expansion_10_binary_01.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T, datatype = "INT2S")
+
+# density of the top 10% free priority areas
+proj4string(free_pa_expansion10_binary) <- CRS("+init=epsg:4326")
+free_pa_expansion10_binary_proj <- projectRaster(from = free_pa_expansion10_binary, crs = "+proj=eck4 +over +ellps=WGS84", filename = "../zruns/2016_data/1_free_exp_hm1/1_free_exp_hm1_out/free_PA_expansion_10_binary_01_projected.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T )
+
+free_pa_expansion10_binary_proj_points <- rasterToPoints(free_pa_expansion10_binary_proj, spatial = T)
+free_pa_expansion10_binary_proj_points@bbox <- eckert_world@bbox
+free_pa_expansion10_density <- smooth_map(free_pa_expansion10_binary_proj_points, to.Raster = T, bandwidth = c(200,200))[["raster"]]
+writeRaster(free_pa_expansion10_density, filename = "../zruns/2016_data/1_free_exp_hm1/1_free_exp_hm1_out/free_PA_expansion_10_binary_01_density.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T )
+```
+
+```{r continent_stats, warning = F} 
+# This block:
+# - calcualtes KBA / PA statistics by continent (and makes a data frame out of it wwhich is used for producing a plot of continental statistics)
+continent_raster <- raster("../data/continents/continents_r16c.tif") 
+
+# KBAs protected per country
+unp_KBA_cell_size <- mask(cell_size, unprotected_KBA, filename = "../temp/tempraster1.tif", options = "COMPRESS=DEFLATE", overwrite = T)
+unp_KBA_cell_size <- raster("../temp/tempraster1.tif")
+KBA_cell_size <- mask(cell_size, KBA_mask, filename = "../temp/tempraster2.tif", options = "COMPRESS=DEFLATE", overwrite = T)
+KBA_cell_size <- raster("../temp/tempraster2.tif")
+PA_cell_size <- mask(cell_size, PA_mask, filename = "../temp/tempraster3.tif", options = "COMPRESS=DEFLATE", overwrite = T)
+PA_cell_size <- raster("../temp/tempraster3.tif")
+
+# continental stats
+continent_area <- zonal(cell_size, continent_raster, fun = "sum")
+PAs_continents <- zonal(PA_cell_size, continent_raster, fun = "sum")
+KBAs_continents <- zonal(KBA_cell_size, continent_raster, fun = "sum")
+unp_KBAs_continents <- zonal(unp_KBA_cell_size, continent_raster, fun = "sum")
+
+# continental stats in a data-frame
+continent_data <- data.frame(cont = c("Africa", "Antarctica", "Asia", "Australia", "Europe", "North\nAmerica", "Oceania", "South\nAmerica"),
+                             area = continent_area[,2], PA_area = PAs_continents[,2], KBA_area = KBAs_continents[,2], protected_KBA = KBAs_continents[,2] - unp_KBAs_continents[,2])
+continent_data <- rbind(continent_data, data.frame(cont = "Global", t(colSums(continent_data[ ,2:5]))))
+continent_data <- continent_data %>% mutate(pr_protected = PA_area / area * 100, pr_kba_protected = protected_KBA / KBA_area * 100)
+```
+
+```{r species_represenation, echo = F, include = F}
+# This block:
+#  - defnes species representaion levels within the priority sets ( + KBAs and PAs)
+
+# Perfomance curves of zonation analysis. Contains information on species represenation within priority sets.
+free_curve_full <- read.table("../zruns/2016_data/1_free_exp_hm1/1_free_exp_hm1_out/1_free_exp_hm1.ABF_M.curves.txt", header = F)
+kba_curve_plu <- read.table("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/2_kba_priority_hm2_plu.ABF_M.curves.txt", header = F)
+kba_curve_free <- read.table("../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD.ABF_M.curves.txt", header = F)
+
+# Count where the curves should be cut to get the proper gap spp stats
+wr <- raster("../data/masks/WDPA_raster_2016_nofw.tif") # WDPA areas within zonation analysis mask
+wdpa_z_area <- zonal(cell_size, wr, fun = "sum")
+kba_z_area <- zonal(cell_size, unprotected_KBA_z, fun = "sum")
+land_mask_z <- raster("../data/masks/land_mask_nofw_TW_data.tif")
+land_mask_area <- zonal(cell_size, land_mask_z, fun = "sum")
+expansion_area <- zonal(cell_size, top_10_KBAs, fun = "sum")
+
+# WDPA, KBA + WDPA and priority area sizes within zonation mask
+wdpa_kink <- 1 - (wdpa_z_area[ ,2] / land_mask_area[ ,2])
+kba_kink <- 1 - (wdpa_z_area[ ,2] + kba_z_area[ ,2]) / land_mask_area[ ,2]
+expansion_kink <- 1 - (wdpa_z_area[ ,2] + expansion_area[2,2]) / land_mask_area[ ,2]
+
+# remove summary columns (1 to 7) from the curves files and save the area of landscape removed (the first column of the curves) 
+landscape_removed <- free_curve_full[ ,1]
+free_curve <- free_curve_full[ ,-(1:7)]
+plu_removed <- kba_curve_plu[ ,1]
+plu_curve <- kba_curve_plu[ ,-(1:7)]
+kba_free_removed <- kba_curve_free[ ,1]
+kba_free_curve <- kba_curve_free[ ,-(1:7)]
+
+# First row of the curves is needed to identify species that didn't haev any range within the mask
+first_row <- as.numeric(free_curve[1, ])
+
+# Take the rows that are closest to WDPA, WDPA + KBA and enxpasion area sizes. 
+WDPA_gap_row <- as.numeric(plu_curve[min(which(plu_removed > (wdpa_kink))), ])
+full_gap_row <- as.numeric(plu_curve[min(which(plu_removed > (kba_kink))), ])
+free_gap_row <- as.numeric(free_curve[min(which(landscape_removed > (expansion_kink))), ])
+expansion_gap_row <- as.numeric(plu_curve[min(which(plu_removed > (expansion_kink))), ])
+free_kba_gap_row <- as.numeric(kba_free_curve[min(which(kba_free_removed > (expansion_kink))), ])
+
+####### Not run, this is for extracting the 5% species in the prerun zonation analysis ###########
+# # Extract the paths of the gap species
+# less_than_5pr <- as.character(spp_list_no_gbif[full_gap_row < 0.05, 6])
+# # save the r data to take it to Arnold later on
+# save(less_than_5pr, file = "../temp/less_than_5pr.Rda")
+# less_than_5pr_spp <- unique(gsub("Seasonal|SeasonalResident|SeasonalBreeding|SeasonalNonbreeding|Passage", "", less_than_5pr))
+# save(less_than_5pr_spp, file = "../temp/less_than_5pr_spp.Rda")
+# # Extract spp names from the file paths
+# less_than_5pr_gap_names <- sapply(strsplit(less_than_5pr_spp, "_"), function(x) x[length(x) - 1])
+# # count single spp only once
+# less_than_5pr_gap_names_spp <- unique(gsub("Seasonal|SeasonalResident|SeasonalBreeding|SeasonalNonbreeding|Passage", "", less_than_5pr_gap_names)) # nothing to remove here!
+```
+
+```{r kba_research_priority_data, echo = F, include = F}
+# This block:
+# - Identify research pirority areas that would together with the priority KBA, priorty areas increase the coverage of PAs to 17%
+# - calcuate species coverage within PAs, KBAs and the priority set
+# - create a map about density of the priority areas
+
+# Species represenation curves from research priority zonation run
+expansion_pixel_curve <- read.table("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/3_new_kba_hm2_GBIF.ABF_M.curves.txt", header = F)
+expansion_pixel_curve_strip <- expansion_pixel_curve[ ,-(1:7)]
+expansion_first_row <- expansion_pixel_curve_strip[1, ]
+
+# Are that is needed to expand from priority KBAs to 17%
+exp_pr_all <- kba_expansion_area[2,2] / land_maks_area_all * 100
+res_exp_17 <- ((17 - (PA_coverage_all + exp_pr_all)) * (ter_area / land_maks_area_all)) / 100
+
+# Select the row from the curves file that represents enpansion 17%
+research_expansion_row_17 <- as.numeric(expansion_pixel_curve_strip[min(which(expansion_pixel_curve[ ,1] > (kba_kink - res_exp_17))), ])
+
+mean_reseach_17 <- mean(research_expansion_row_17[expansion_first_row != 0])
+gaps_research_17 <- sum(research_expansion_row_17[expansion_first_row != 0] == 0)
+fulls_research_17 <- sum(research_expansion_row_17[expansion_first_row != 0] == 1)
+
+# read KBA priority
+unprotected_areas_or_nokba_z <- raster("../data/masks/not_protected_or_kba_z.tif")
+
+# Expansion ranking, this is run but not strictly needed!
+kba_expansion_ranking <- raster("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/3_new_kba_hm2_GBIF.ABF_M.rank.compressed.tif")
+
+## Make a binary map of expansion area that would cover all spp at least once
+kba_expansion_ranking_binary_17 <- reclassify(kba_expansion_ranking, matrix(c(0, kba_kink - res_exp_17, NA, kba_kink - res_exp_17, kba_kink , 1, kba_kink , 1, NA), 3, 3, byrow = T),  filename = "../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/kba_expansion_17_binary_3.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T)
+
+# density of 17% researchpriority
+proj4string(kba_expansion_ranking_binary_17) <- CRS("+init=epsg:4326")
+kba_expansion_17_binary_points <- rasterToPoints(kba_expansion_ranking_binary_17, spatial = T)
+kba_expansion_17_binary_points_proj <- spTransform(kba_expansion_17_binary_points, CRS("+proj=eck4 +over +ellps=WGS84"))
+kba_expansion_17_binary_points_proj@bbox <- eckert_world@bbox
+kba_expansion_17_binary_points_proj_density <- smooth_map(kba_expansion_17_binary_points_proj, to.Raster = T, bandwidth = c(200,200))[["raster"]]
+
+writeRaster(kba_expansion_17_binary_points_proj_density, filename = "../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/kba_expansion_17_binary_points_proj_density.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T )
+```
+
+```{r compare_priority_KBAs, echo = F, include = F}
+# In this block priority KBAs are compared to other KBAs:
+#   1. Number of reasons triggerin KBA definition
+#   2. Which reasons area triggering KBA definition
+#   3. Size of priorirty areas
+
+# Triggers are identified using KBA IDs
+KBA_IDs <- raster("../data/masks/KBA_ID_raster_2016_only_terrestrials.tif")
+
+priority_IDs <- mask(KBA_IDs, top_10_KBAs, filename = "../temp/priority_kba_ids.tif", options = "COMPRESS=DEFLATE", overwrite = T)
+unprotected_IDs <- mask(KBA_IDs, unprotected_KBA, filename = "../temp/unprotected_kba_ids.tif", options = "COMPRESS=DEFLATE", overwrite = T)
+
+priority_IDs_list <- unique(priority_IDs[])
+unprotected_IDs_list <- unique(unprotected_IDs[])
+
+# average priority KBA size, on average smaller areas area in priority areas. But is this because the areas area smalelr in lower latitudes or that smaller areas arae better for optimization?
+priority_size <- zonal(cell_size, priority_IDs, fun = "sum")
+unprotected_size <- zonal(cell_size, unprotected_IDs, fun = "sum")
+
+# combine trigger data with areas
+KBA_poly <- readOGR("../data/KBAsGlobal_2016_4", "Global_KBA_poly")
+priority_IDs_data <- KBA_poly@data[KBA_poly$SITRECID %in% priority_IDs_list, ]
+unprotected_IDs_data <- KBA_poly@data[KBA_poly$SITRECID %in% unprotected_IDs_list, ]
+```
+
+```{r KBA_cover, fig.cap = figRef("KBA_cover", " Distribution of unprotected terrestrial KBAs (A) andprotected area coverage of KBAs by continent (B). Panel A shows the spatial distribution of unprotected terrestrial KBAs. Darker colors indicate higher coverage of the terrestrial surface by unprotected KBAs. Terrestrial areas without any unprotected KBAs appear white. These areas cannot be reached by prioritization analysis that is limited to unprotected KBAs only. In panel B the bars show the percentage of the total KBA area that is covered by protected areas (dark gray) and overall protected area coverage of the terrestrial areas (light gray). In all continents but Oceania protected area coverage of KBAs is higher than overall protection level of terrestrial areas."), warning = F, fig.height = 6.29, fig.width = 6.811, dev.args = list(compression='lzw')}
+
+# Arange table for plotting
+conctinent_data_long <- continent_data[-9, ]  %>% select(cont, pr_protected, pr_kba_protected) %>% mutate(plot_rank = rank(-pr_kba_protected)) %>% gather(key = KBA_or_PA, value = pr, pr_protected, pr_kba_protected)
+
+areas <- ggplot(conctinent_data_long, aes(y = pr, x = reorder(cont, plot_rank), fill = KBA_or_PA)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "%", limits = c(0, 100)) +
+  scale_fill_manual(labels = c("% KBAs protected", "% of land protected"), values = c("gray25", "gray50"), name = NULL) +
+  theme(legend.position = c(0.87, 0.81), legend.background = element_rect(color = "transparent", fill = "transparent"), legend.box = "horizontal")
+
+# calculate coverage of unprotected KBAs within with 2 degree cells (terrestrial areas) 
+land_mask_cell_size <- mask(cell_size, land_mask, filename = "temp/land_mask_cell_size.tif", options = "COMPRESS=DEFFLATE", overwrite = T)
+land_mask_2deg_size <- aggregate(land_mask_cell_size, c(120, 120), fun = "sum")
+unp_KBA_cell_size_2deg_area <- aggregate(unp_KBA_cell_size, c(120, 120), fun = "sum")
+unp_KBA_cell_size_2deg_pr <- unp_KBA_cell_size_2deg_area / land_mask_2deg_size
+
+unp_KBA_cell_size_2deg_pr_eck4 <- projectRaster(unp_KBA_cell_size_2deg_pr, crs = "+proj=eck4", over = T)
+unp_KBA_cell_size_2deg_pr_eck4 <- unp_KBA_cell_size_2deg_pr_eck4 * 100
+
+# world data needed for plotting country borders
+data(World)
+
+# create plot showing density of unprotected KBAs
+unps <-
+  tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) +
+  tm_fill(col = "ivory") +
+  tm_shape(unp_KBA_cell_size_2deg_pr_eck4) +
+  tm_raster(palette = brewer.pal(4, "Blues")[2:4], alpha = 1, legend.show = T, title = "% of land covered by \n unprotected \n KBAs", style = "fixed", breaks = c(0, 10, 50, 100), auto.palette.mapping = F, labels = c("< 10", "10 - 50", "> 50")) +
+  tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) +
+  
+  # draw country borders
+  tm_borders(col = "gray20") +
+  tm_grid(projection="longlat", labels.size = 0) +
+  
+  # and final formatting
+  tm_format_World(legend.title.size = 1.2,
+                  legend.text.size = 1,
+                  # legend.position = c("left","bottom"),
+                  legend.position = c(-0.1, 0.6),
+                  legend.bg.color = "transparent",
+                  legend.bg.alpha = 1,
+                  inner.margins = c(.02, .02, .02, .02), outer.margins = rep(0.01, 4), bg.color="gray98", earth.boundary = TRUE, space.color="gray95", frame = FALSE)
+
+# Create plot
+grid.newpage()
+par(lheight = 0.5)
+pushViewport(viewport(x = 1, y = 0.99, width = 1, height = 0.5, just = c("right", "top")))
+print(unps, vp = viewport(x = 0.565, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+popViewport(n = 1)
+pushViewport(viewport(x = 1, y = 0.49, width = 1, height = 0.5, just = c("right", "top")))
+print(areas, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+popViewport(n = 1)
+grid.text("A", x = 0.02, y = 0.985, just = c("left", "top"))
+grid.text("B", x = 0.02, y = 0.474, just = c("left", "top"))
+```
+
+\n
+
+```{r species_cover, warning = T}
+# This block:
+# - creates a data frame containng species coverage within priority sets
+
+# make a filter for DD and GBIF species to calculate the group means
+spp_info <- read.csv2("../data/New_global_species/species_RLI_class.csv") # The file containing threat status of the spp
+
+# pick scientific names from the spp files
+spp_names <- spp_list_no_gbif[,6]
+spp_names <- sapply(strsplit(as.character(spp_names), split = "_"), function(x) x[length(x) - 1])
+
+# select DD species from "basic spp file"
+is_DD <- sapply(spp_names, function(x) spp_info[grep(x, spp_info[ ,2])[1], 1] == "DD")
+
+# select non DD species from spp files with GBIF points 
+is_DD_GBIF <- rep(F, nrow(spp_list_gbif))
+is_DD_GBIF[1:7228] <- is_DD
+is_DD_GBIF[length(is_DD):nrow(spp_list_gbif)] <- T
+
+# select DD species from spp files with GBIF points
+is_DD_not_GBIF <- rep(F, nrow(spp_list_gbif))
+is_DD_not_GBIF[1:7228] <- is_DD
+is_DD_not_GBIF[length(is_DD):nrow(spp_list_gbif)] <- F
+
+# Build a data frame of solution statistics
+range_frame_s <- data.frame(set = c("PAs", "KBAs - 10 %", "KBAs - free 10%", "KBAs - all", "free", "research"), 
+                            "mean" = c(round(mean(WDPA_gap_row[first_row != 0 & !is_DD]) * 100, 1),
+                                       round(mean(expansion_gap_row[first_row != 0 & !is_DD]) * 100, 1),
+                                       round(mean(free_kba_gap_row[first_row != 0 & !is_DD]) * 100, 1),
+                                       round(mean(full_gap_row[first_row != 0 & !is_DD]) * 100, 1),
+                                       round(mean(free_gap_row[first_row != 0 & !is_DD]) * 100, 1),
+                                       round(mean(research_expansion_row_17[expansion_first_row != 0 & !is_DD_GBIF]) * 100, 1)),
+
+                            "gap spp" = c(paste0(sum(WDPA_gap_row[first_row != 0 & !is_DD] == 0), " (", round(sum(WDPA_gap_row[first_row != 0 & !is_DD] == 0) / length(WDPA_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"), 
+                                             paste0(sum(expansion_gap_row[first_row != 0 & !is_DD] == 0), " (", round(sum(expansion_gap_row[first_row != 0 & !is_DD] == 0) / length(expansion_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_kba_gap_row[first_row != 0 & !is_DD] == 0), " (", round(sum(free_kba_gap_row[first_row != 0 & !is_DD] == 0) / length(free_kba_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(full_gap_row[first_row != 0 & !is_DD] == 0), " (", round(sum(full_gap_row[first_row != 0 & !is_DD] == 0) / length(full_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_gap_row[first_row != 0 & !is_DD] == 0), " (", round(sum(free_gap_row[first_row != 0 & !is_DD] == 0) / length(free_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(research_expansion_row_17[expansion_first_row != 0  & !is_DD_GBIF] == 0), " (", round(sum(research_expansion_row_17[expansion_first_row != 0 & !is_DD_GBIF] == 0) / length(research_expansion_row_17[expansion_first_row != 0 & !is_DD_GBIF]) * 100, 2), ")")),
+                                          
+                            "full spp" = c(paste0(sum(WDPA_gap_row[first_row != 0 & !is_DD] == 1), " (", round(sum(WDPA_gap_row[first_row != 0 & !is_DD] == 1) / length(WDPA_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"), 
+                                             paste0(sum(expansion_gap_row[first_row != 0 & !is_DD] == 1), " (", round(sum(expansion_gap_row[first_row != 0 & !is_DD] == 1) / length(expansion_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_kba_gap_row[first_row != 0 & !is_DD] == 1), " (", round(sum(free_kba_gap_row[first_row != 0 & !is_DD] == 1) / length(free_kba_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(full_gap_row[first_row != 0 & !is_DD] == 1), " (", round(sum(full_gap_row[first_row != 0 & !is_DD] == 1) / length(full_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_gap_row[first_row != 0 & !is_DD] == 1), " (", round(sum(free_gap_row[first_row != 0 & !is_DD] == 1) / length(free_gap_row[first_row != 0 & !is_DD]) * 100, 2), ")"),
+                                             paste0(sum(research_expansion_row_17[expansion_first_row != 0  & !is_DD_GBIF] == 1), " (", round(sum(research_expansion_row_17[expansion_first_row != 0 & !is_DD_GBIF] == 1) / length(research_expansion_row_17[expansion_first_row != 0 & !is_DD_GBIF]) * 100, 2), ")")),
+                            
+                            "mean_DD" = c(round(mean(WDPA_gap_row[first_row != 0 & is_DD]) * 100, 1),
+                                          round(mean(expansion_gap_row[first_row != 0 & is_DD]) * 100, 1),
+                                          round(mean(free_kba_gap_row[first_row != 0 & is_DD]) * 100, 1),
+                                          round(mean(full_gap_row[first_row != 0 & is_DD]) * 100, 1),
+                                          round(mean(free_gap_row[first_row != 0 & is_DD]) * 100, 1),
+                                          round(mean(research_expansion_row_17[expansion_first_row != 0 & is_DD_not_GBIF]) * 100, 1)),
+                            
+                            "gap spp_DD" = c(paste0(sum(WDPA_gap_row[first_row != 0 & is_DD] == 0), " (", round(sum(WDPA_gap_row[first_row != 0 & is_DD] == 0) / length(WDPA_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"), 
+                                             paste0(sum(expansion_gap_row[first_row != 0 & is_DD] == 0), " (", round(sum(expansion_gap_row[first_row != 0 & is_DD] == 0) / length(expansion_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_kba_gap_row[first_row != 0 & is_DD] == 0), " (", round(sum(free_kba_gap_row[first_row != 0 & is_DD] == 0) / length(free_kba_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(full_gap_row[first_row != 0 & is_DD] == 0), " (", round(sum(full_gap_row[first_row != 0 & is_DD] == 0) / length(full_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_gap_row[first_row != 0 & is_DD] == 0), " (", round(sum(free_gap_row[first_row != 0 & is_DD] == 0) / length(free_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(research_expansion_row_17[expansion_first_row != 0  & is_DD_not_GBIF] == 0), " (", round(sum(research_expansion_row_17[expansion_first_row != 0 & is_DD_not_GBIF] == 0) / length(research_expansion_row_17[expansion_first_row != 0 & is_DD_not_GBIF]) * 100, 2), ")")),
+                            
+                            "full spp_DD" = c(paste0(sum(WDPA_gap_row[first_row != 0 & is_DD] == 1), " (", round(sum(WDPA_gap_row[first_row != 0 & is_DD] == 1) / length(WDPA_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"), 
+                                             paste0(sum(expansion_gap_row[first_row != 0 & is_DD] == 1), " (", round(sum(expansion_gap_row[first_row != 0 & is_DD] == 1) / length(expansion_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_kba_gap_row[first_row != 0 & is_DD] == 1), " (", round(sum(free_kba_gap_row[first_row != 0 & is_DD] == 1) / length(free_kba_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(full_gap_row[first_row != 0 & is_DD] == 1), " (", round(sum(full_gap_row[first_row != 0 & is_DD] == 1) / length(full_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(free_gap_row[first_row != 0 & is_DD] == 1), " (", round(sum(free_gap_row[first_row != 0 & is_DD] == 1) / length(free_gap_row[first_row != 0 & is_DD]) * 100, 2), ")"),
+                                             paste0(sum(research_expansion_row_17[expansion_first_row != 0  & is_DD_not_GBIF] == 1), " (", round(sum(research_expansion_row_17[expansion_first_row != 0 & is_DD_not_GBIF] == 1) / length(research_expansion_row_17[expansion_first_row != 0 & is_DD_not_GBIF]) * 100, 2), ")")))
+
+panderOptions('table.split.table', Inf)
+panderOptions('table.alignment.default', "left")
+panderOptions('keep.line.breaks', TRUE)
+set.caption(tabRef("species_cover", "Coverage of the species ranges by the priority sets. The priority sets refer to: “PAs” = protected areas; “KBAs – 10%” = protected areas + top 10% of unprotected KBAs using KBAs as planning units; “KBAs – free 10%” = protected areas  + top 10% of the unprotected KBA area with partial selection allowed; “KBAs – all” =  protected areas + all KBAs; “Free” = protected areas + pixel based priority areas for protected area expansion, (total area is the same as in sets “KBAs – 10%” and “KBAs - free 10%”); “research” = protected areas + all KBAs + top priority areas outside KBAs and protected areas (2.1% of the rest of the  landscape). Mean refers to mean percentage of species ranges covered. Gap species and full species refer to number of species completely missed by the solution and number of species ranges fully covered by the solution respectively (percentage of all species in parentheses). The values for ”KBAs – all” set correspond to maximum species coverage that is reachable within the protected area and KBA networks. The solutions that are confined to the protected area and KBA networks (“KBAs – 10%”, “KBAs – free 10%” and “Free”) cannot exceed these values because some of the species ranges are only partly, or not at all, covered by the protected area or KBA networks."))
+pander(range_frame_s, format = "html")
+```
+
+\n
+
+```{r priority_map, echo = F, include = T, warning = F, error = F, message = F, fig.cap=figRef("priority_map", "Priority KBAs and research priority areas identified in the analysis. The main map in panel A highlights the areas that contain a high density of priority Key Biodiversity Areas (KBAs) for protected area expansion based on threatened species ranges. Panel B highlights locations with a high density of research priority areas that are potential areas for effective protected area and KBA network expansion. Inset maps show detailed arrangements of priority KBAs, research priority areas, unprotected KBAs and protected areas in selected locations. A full resolution map of priority KBAs is provided as a supplementary material."), fig.height = 6.21, fig.width = 6.811, dev.args = list(compression='lzw')}
+
+# Create inset maps
+kba_expansion <- raster("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_2016.tif")
+PA_mask <- raster("../data/masks/WDPA_raster_2016_nofw_all_included.tif")
+np_KBA <- raster("../data/masks/non_protected_KBAs_2016.tif")
+
+## Adjust the smoothed maps
+free_pa_expansion10_density <- raster("../zruns/2016_data/1_free_exp_hm1/1_free_exp_hm1_out/free_PA_expansion_10_binary_01_density.tif")
+free_pa_expansion10_density <- free_pa_expansion10_density^(1/2.6)
+free_pa_expansion10_density[free_pa_expansion10_density < 0.095] <- NA
+
+top_10_KBAs_density <- raster("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_density.tif")
+top_10_KBAs_density <- top_10_KBAs_density^(1/2.6)
+top_10_KBAs_density[top_10_KBAs_density < 0.095] <- NA
+
+## Inset maps
+### these area the extents of the areas that are magnified
+ce <- list(extent(c(-82, -72, -9.5, 7.5)), extent(c(-101, -87, 13, 23)),extent(c(42.5, 51, -26, -11.5)), extent(c(92.5, 98, 23, 31)), extent(c(140, 155, -10.5, -2)))
+
+zoom_map <- list() # list of detailed raster maps
+zoom_box <- list() # list of polygons showing the zoom locations
+
+for(i in seq(ce)) {
+  
+  # cut detailed raster data
+  ce1 <- ce[[i]]
+  PA_mask_zoom1 <- crop(PA_mask, ce1)
+  kba_mask_zoom1 <- crop(np_KBA, ce1)
+  kba_expansion_zoom1 <- crop(kba_expansion, ce1)
+  
+  # create inset map
+  zoom_map[[i]] <-
+    tm_shape(World) + 
+    tm_fill(col = "ivory") + 
+    tm_shape(PA_mask_zoom1) + 
+    tm_raster(palette = "gray60", legend.show = F) +
+    tm_shape(kba_mask_zoom1) + 
+    tm_raster(palette = "darkgoldenrod3", legend.show = F) +
+    tm_shape(kba_expansion_zoom1) + 
+    tm_raster(palette = "dodgerblue4", auto.palette.mapping = F, legend.show = F) +
+    tm_shape(World) + 
+    tm_borders() +
+    tm_layout(title = i, bg.color="gray97")
+
+  # create polygon showing the location of the inset map in a larger map
+  zoom_box[[i]] <- as(ce[[i]], "SpatialPolygons")
+  projection(zoom_box[[i]]) <- projection(CRS("+init=epsg:4326"))
+}
+
+# numberig for the inset boxes
+box_numbers <- data.frame(x = c(ce[[1]][1], ce[[2]][1], ce[[3]][1], ce[[4]][1], ce[[5]][1]) - 0.6, y = c(ce[[1]][4], ce[[2]][4], ce[[3]][4], ce[[4]][4], ce[[5]][4]), label = 1:5)
+coordinates(box_numbers) <- ~x + y
+proj4string(box_numbers) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+box_numbers <- spTransform(box_numbers, CRS("+proj=eck4 +over +ellps=WGS84 +datum=WGS84"))
+
+
+# Create main map of the global distirbution of priority KBAs and free expansion areas
+data(World) # this is the world map
+globe <-  tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) +
+  tm_fill(col = "ivory") +
+
+  # draw the density of the priority areas. This smoothing option creates more pleasing visualization, but is ONLY  a visualization
+  tm_shape(top_10_KBAs_density) +
+  tm_raster(palette = "Blues", alpha = 1, legend.show = F) +
+  tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) +
+
+  # draw country borders
+  tm_borders(col = "gray20") +
+  tm_grid(projection="longlat", labels.size = 0) +
+
+  # draw the zoom location boxes
+  tm_shape(spTransform(zoom_box[[1]], CRS("+proj=eck4 +over"))) +
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[2]], CRS("+proj=eck4 +over"))) +
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[3]], CRS("+proj=eck4 +over"))) +
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[4]], CRS("+proj=eck4 +over"))) +
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[5]], CRS("+proj=eck4 +over"))) +
+  tm_borders(col = "red") +
+  tm_shape(box_numbers) +
+    tm_text("label", just = c("right", "center"), col = "red", fontfamily = "bold", scale = 1.2) +
+
+  # and final formatting
+  tm_format_World(inner.margins = c(.04, .03, .02, .2), outer.margins = rep(0, 4),  between.margin = 0, bg.color="gray97", earth.boundary = TRUE, space.color="white", frame = FALSE)
+
+## Build research priority maps
+# Adjust the smoothed maps
+research_priority_density <- raster("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/kba_expansion_17_binary_points_proj_density.tif")
+research_priority_density <- research_priority_density^(1/2)
+research_priority_density[research_priority_density < 0.05] <- NA
+
+## Create main map showing the global distirbution of priority KBAs and free expansion areas 
+globe_research <-  tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) + 
+  tm_fill(col = "ivory") + 
+  
+  # draw the density of the priority areas. If bicolor is used in the end I have to make one raster that represents the mixed color better. 
+  tm_shape(research_priority_density) + 
+  tm_raster(palette = "Greens", alpha = 1, legend.show = F) +
+  tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) + 
+  
+  # draw country borders
+  tm_borders(col = "gray20") + 
+  tm_grid(projection="longlat", labels.size = 0) +
+
+  # draw the zoom location boxes
+  tm_shape(spTransform(zoom_box[[1]], CRS("+proj=eck4 +over"))) + 
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[2]], CRS("+proj=eck4 +over"))) + 
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[3]], CRS("+proj=eck4 +over"))) + 
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[4]], CRS("+proj=eck4 +over"))) + 
+  tm_borders(col = "red") +
+  tm_shape(spTransform(zoom_box[[5]], CRS("+proj=eck4 +over"))) + 
+  tm_borders(col = "red") +
+  tm_shape(box_numbers) +
+  tm_text("label", just = c("right", "center"), col = "red", fontfamily = "bold", scale = 1.2) +
+  
+  # and final formatting  
+  tm_format_World(inner.margins = c(0.04, 0.03, 0.02, 0.2), outer.margins = rep(0, 4), bg.color="gray97", earth.boundary = TRUE, space.color="white", frame = FALSE)
+
+# Create zooms
+zoom_map_res <- list() # list of detailed raster maps
+
+for(i in seq(ce)) {
+  
+  # cut the raster data
+  ce1 <- ce[[i]]
+  PA_mask_zoom1 <- crop(PA_mask, ce1)
+  kba_mask_zoom1 <- crop(KBA_mask, ce1)
+  research_priority_zoom1 <- crop(kba_expansion_ranking_binary_17, ce1)
+  
+  # create inset map
+  zoom_map_res[[i]] <-
+    tm_shape(World) + 
+    tm_fill(col = "ivory") + 
+    tm_shape(PA_mask_zoom1) + 
+    tm_raster(palette = "gray60", legend.show = F) +
+    tm_shape(kba_mask_zoom1) + 
+    tm_raster(palette = "darkgoldenrod3", legend.show = F) +
+    tm_shape(research_priority_zoom1) + 
+    tm_raster(palette = "darkgreen", auto.palette.mapping = F, legend.show = F) +
+    # tm_shape(gbif_not_prot_proj) +
+    # tm_dots(size = 0.2, col = "goldenrod2") +
+    tm_shape(World) + 
+    tm_borders() +
+    tm_layout(title = i, bg.color="gray97")
+  
+  # create polygon showing the location of the inset map
+  zoom_box[[i]] <- as(ce[[i]], "SpatialPolygons")
+  projection(zoom_box[[i]]) <- projection(CRS("+init=epsg:4326"))
+}
+
+## draw the maps using viewport for the inlays
+grid.newpage()
+pushViewport(viewport(x = 1, y = 0.99, width = 1, height = 0.5, just = c("right", "top")))
+print(globe, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+print(zoom_map[[1]], vp = viewport(x = 0.01, y = 0.95, just = c("left", "top"), width = 0.4 * (abs(ce[[1]][1] - ce[[1]][2]) / abs(ce[[1]][3] - ce[[1]][4])) * (4.1 / 9), height = 0.4))
+print(zoom_map[[2]], vp = viewport(x = 0.015, y = 0.08, just = c("left", "bottom"), width = 0.35 * (abs(ce[[2]][1] - ce[[2]][2]) / abs(ce[[2]][3] - ce[[2]][4])) * (4.1 / 9), height = 0.35))
+print(zoom_map[[3]], vp = viewport(x = 0.335, y = 0.05, just = c("left", "bottom"), width = 0.38 * (abs(ce[[3]][1] - ce[[3]][2]) / abs(ce[[3]][3] - ce[[3]][4])) * (4.1 / 9), height = 0.38))
+print(zoom_map[[5]], vp = viewport(x = 0.985, y = 0.07, just = c("right", "bottom"), width = 0.32  * (abs(ce[[5]][1] - ce[[5]][2]) / abs(ce[[5]][3] - ce[[5]][4])) * (4.1 / 9), height = 0.32))
+print(zoom_map[[4]], vp = viewport(x = 0.52, y = 0.05, just = c("left", "bottom"), width = 0.38 * (abs(ce[[4]][1] - ce[[4]][2]) / abs(ce[[4]][3] - ce[[4]][4])) * (4.1 / 9), height = 0.38))
+
+pushViewport(viewport(0.99, 0.94, width = 0.2, height = 0.25, just = c("right", "top"),
+    layout = grid.layout(nrow = 7, heights = c(0.05, 0.8/3, 0.05, 0.8/3, 0.05, 0.8/3, 0.05), ncol = 5, widths = c(0.01, 0.1, 0.01, 0.5, 0.01))))
+grid.rect()
+grid.rect(width = unit(5, "mm"), height = unit(5, "mm"), gp = gpar(fill = "dodgerblue4"), vp = viewport(layout.pos.row = 2, layout.pos.col = 2))
+grid.rect(width = unit(5, "mm"), height = unit(5, "mm"), gp = gpar(fill = "darkgoldenrod3"), vp = viewport(layout.pos.row = 4, layout.pos.col = 2))
+grid.rect(width = unit(5, "mm"), height = unit(5, "mm"), gp = gpar(fill = "gray60"), vp = viewport(layout.pos.row = 6, layout.pos.col = 2))
+grid.text("Unprotected KBA", x = 0, just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 4, layout.pos.col = 4))
+grid.text("Protected area", x = 0, just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 6, layout.pos.col = 4))
+grid.text("Priority", x = 0, y = 0.79, just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+grid.text("unprotected KBA", x = 0, y = 0.29,  just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+
+popViewport(n = 2, recording=TRUE)
+pushViewport(viewport(x = 1, y = 0.49, width = 1, height = 0.5, just = c("right", "top")))
+print(globe_research, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+print(zoom_map_res[[1]], vp = viewport(x = 0.01, y = 0.95, just = c("left", "top"), width = 0.4 * (abs(ce[[1]][1] - ce[[1]][2]) / abs(ce[[1]][3] - ce[[1]][4])) * (4.1 / 9), height = 0.4))
+print(zoom_map_res[[2]], vp = viewport(x = 0.015, y = 0.08, just = c("left", "bottom"), width = 0.35 * (abs(ce[[2]][1] - ce[[2]][2]) / abs(ce[[2]][3] - ce[[2]][4])) * (4.1 / 9), height = 0.35))
+print(zoom_map_res[[3]], vp = viewport(x = 0.335, y = 0.05, just = c("left", "bottom"), width = 0.38 * (abs(ce[[3]][1] - ce[[3]][2]) / abs(ce[[3]][3] - ce[[3]][4])) * (4.1 / 9), height = 0.38))
+print(zoom_map_res[[5]], vp = viewport(x = 0.985, y = 0.07, just = c("right", "bottom"), width = 0.32  * (abs(ce[[5]][1] - ce[[5]][2]) / abs(ce[[5]][3] - ce[[5]][4])) * (4.1 / 9), height = 0.32))
+print(zoom_map_res[[4]], vp = viewport(x = 0.52, y = 0.05, just = c("left", "bottom"), width = 0.38 * (abs(ce[[4]][1] - ce[[4]][2]) / abs(ce[[4]][3] - ce[[4]][4])) * (4.1 / 9), height = 0.38))
+
+pushViewport(viewport(0.99, 0.94, width = 0.2, height = 0.25, just = c("right", "top"),
+    layout = grid.layout(nrow = 7, heights = c(0.05, 0.8/3, 0.05, 0.8/3, 0.05, 0.8/3, 0.05), ncol = 5, widths = c(0.01, 0.1, 0.01, 0.5, 0.01))))
+grid.rect()
+grid.rect(width = unit(5, "mm"), height = unit(5, "mm"), gp = gpar(fill = "darkgreen"), vp = viewport(layout.pos.row = 2, layout.pos.col = 2))
+grid.rect(width = unit(5, "mm"), height = unit(5, "mm"), gp = gpar(fill = "darkgoldenrod3"), vp = viewport(layout.pos.row = 4, layout.pos.col = 2))
+grid.rect(width = unit(5, "mm"), height = unit(5, "mm"), gp = gpar(fill = "gray60"), vp = viewport(layout.pos.row = 6, layout.pos.col = 2))
+grid.text("Research priority", x = 0, just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+grid.text("Unprotected KBA", x = 0, just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 4, layout.pos.col = 4))
+grid.text("Protected area", x = 0, just = c("left"), gp = gpar(fontsize = 10), vp = viewport(layout.pos.row = 6, layout.pos.col = 4))
+
+popViewport(n = 2, recording=TRUE)
+grid.text("A", x = 0.01, y = 0.99, just = c("left", "top"))
+grid.text("B", x = 0.01, y = 0.50, just = c("left", "top"))
+```
+
+\n
+
+```{r, trigger_info_table, echo = F, include = T}
+# This block creates table showing proportion of different KBA triggers within priority group and all KBAs
+
+# tabulate triggers
+table_triggers <- data.frame(trigger = factor(names(table(unlist(strsplit(as.character(priority_IDs_data$TRIGGERS), ", ")))),  levels = c("endemic", "CR/EN", "VU", "other", "migratory birds/congregations"), ordered = T),
+                             priority = as.numeric(table(unlist(strsplit(as.character(priority_IDs_data$TRIGGERS), ", "))) / length(priority_IDs_data$TRIGGERS)),
+                             unprotected = as.numeric(table(unlist(strsplit(as.character(unprotected_IDs_data$TRIGGERS), ", "))) / length(unprotected_IDs_data$TRIGGERS)), 
+                             all = as.numeric(table(unlist(strsplit(as.character(all_raster_data$TRIGGERS), ", "))) / length(all_raster_data$TRIGGERS)))
+
+
+set.caption(tabRef("trigger_info", "Percentage of KBAs with different establishment criteria. Different groups refer to priority KBAs, all unprotected KBAs and all KBAs. The sum of the proportions within the groups is higher than one because single a KBA can be selected based on multiple different criteria.."))
+panderOptions('digits' , 2)
+# Note: the values sum over 1 because one KBA can have multiple triggers
+pander(table_triggers, format = "html")
+```
+
+\n
+
+The original KBA polygon data set consisted of approximately `r signif(nrow(KBA_dbf), 3)` separate KBAs that were reduced to `r signif(length(KBAs_raster), 3)` after rasterization and removal of marine areas. These KBAs covered `r round(KBA_coverage_all, 2)`% of the world's terrestrial surface. Overall, `r round(KBAs_protected, 1)`% of the KBA area was protected, leaving `r length(unique(unprotected_IDs_list))` KBAs with at least some unprotected area. Unprotected KBAs covered approximately `r round(unprotected_kba_of_all, 1)`% of the worlds terrestrial surface and were spread fairly evenly, albeit with some larger gaps especially in the Arctic and large desert areas (`r figRef("KBA_cover")`A). In all continents except Oceania, the KBAs were better covered by protection than the landscape on average (`r figRef("KBA_cover")`B).
+
+Protected areas covered `r  round(PA_coverage_all, 1)`% of the terrestrial surface and on average `r round(mean(WDPA_gap_row[first_row != 0]) * 100, 1)`% of the threatened vertebrate ranges, with `r sum(WDPA_gap_row == 0 & first_row != 0 & is_DD == 0)` species occurring completely outside the network (hereafter gap species) and `r sum(WDPA_gap_row == 1 & first_row != 0 & is_DD == 0)` species with ranges fully protected (`r tabRef("species_cover")`). Together, protected areas and KBAs covered `r  round(PA_coverage_all + unprotected_kba_of_all, 1)`% of the terrestrial surface and, on average, `r round(mean(full_gap_row[first_row != 0]) * 100, 1)`% of species ranges, leaving `r sum(full_gap_row == 0 & first_row != 0 & is_DD == 0)` gap species and fully covering `r sum(full_gap_row == 1 & first_row != 0 & is_DD == 0)` species ranges. By protecting top 10% of the unprotected KBA area (0.36% of terrestrial area), it is possible to increase the mean coverage of species ranges by `r round((mean(expansion_gap_row[first_row != 0 & is_DD == 0]) - mean(WDPA_gap_row[first_row != 0  & is_DD == 0])) * 100, 1)` percentage points, the number of gap species would decrease by `r sum(WDPA_gap_row == 0 & first_row != 0 & is_DD == 0) - sum(expansion_gap_row == 0 & first_row != 0 & is_DD == 0)` (from `r sum(WDPA_gap_row == 0 & first_row != 0 & is_DD == 0)` to `r sum(expansion_gap_row == 0 & first_row != 0 & is_DD == 0)`) and the number of species fully covered would increase by `r sum(expansion_gap_row == 1 & first_row != 0 & is_DD == 0) - sum(WDPA_gap_row == 1 & first_row != 0 & is_DD == 0)` (from `r sum(WDPA_gap_row == 1 & first_row != 0 & is_DD == 0)`. As expected, the mean coverage of threatened species ranges was higher for the unconstrained solution than for the ones using KBAs as planning units (`r tabRef("species_cover")`).
+
+As KBAs are based on confirmed species presence, it is not surprising that they are much better in covering threatened species than Data Deficient species (`r tabRef("species_cover")`). In fact, `r round(sum(full_gap_row == 0 & first_row != 0 & is_DD == 1) / sum(first_row != 0 & is_DD == 1)*100, 2)`% of Data Deficient species had their whole (poorly known) range found outside the protected area and KBA networks.
+
+Priority KBAs for protected area network expansion consisted of `r length(priority_IDs_list)` individual sites, with median size of `r median(priority_size[ ,2])` km², which is close to the average size of the unprotected KBA sites (`r median(unprotected_size[ ,2])` km²). Most priority KBAs were located at lower latitudes (`r figRef("priority_map")`), especially in Central America, the Amazonian Andes, Eastern Madagascar, and Southeast Asia (`r figRef("priority_map")`). Priority KBAs had, on average, more establishment criteria attached to them (`r round(length(unlist(strsplit(as.character(priority_IDs_data$TRIGGERS), ", "))) / nrow(priority_IDs_data), 2)` criteria / area) compared to the other unprotected KBAs (`r round(length(unlist(strsplit(as.character(unprotected_IDs_data$TRIGGERS), ", "))) / nrow(unprotected_IDs_data), 2)` criteria / area). Criteria focusing on species rarity were more common in the priority sites than among the other unprotected KBAs (`r tabRef("trigger_info")`).
+
+The distribution of research priority areas for potential KBA network expansion was similar to the pattern of KBA priorities (`r figRef("priority_map")`). The Amazonian Andes, the Atlantic coastal forest in Brazil, Western Africa, continental Southeast Asia and Papua New Guinea were highlighted as areas with highest potential for KBA network expansion. If placed under conservation management, the research priority areas would increase the coverage of species ranges by `r round((mean(research_expansion_row_17) - mean(full_gap_row)) * 100, 1)`% (from `r round(mean(full_gap_row) * 100, 1)`% of the protected areas and KBAs to `r round(mean(research_expansion_row_17) * 100, 1)`%) and leave only 2 threatened species without any conservation coverage (`r figRef("priority_map")`). The research priority areas also overlap with ranges of all data deficient species with a very high mean coverage of 86.6%. Accounting for Data Deficient species and GBIF observations in the analysis did not alter the general global priority pattern (Fig. S2). Its effect on representation of threatened species was also negligible, but representation of Data Deficient species ranges and GBIF observations were increased drastically (Table S2).
+
+## Discussion
+Our results show that KBAs could be used as a basis for effective expansion of the global protected area network especially when complemented with identification of new research priority areas. The current protected area network is known to be located in areas that are largely dictated by other factors than biodiversity [@Joppa2009]. It also misses many species [@Butchart2015], which is further confirmed by our results. By expanding the protected area network with the priority KBAs, large gains in species representation could be achieved within a very small area, which aligns with the requirement of broad ecological representation of Aichi target 11 [@UNEP-CBD2010]. To meet the 17% protection target, three-quarters of the unprotected KBAs should be protected. This would further increase conservation coverage of threatened species, although not as effectively as selection that is not constrained to KBAs only.
+
+The global pattern of priority KBAs matches well with priorities identified in previous global analyses [@Butchart2015; ; @Pouzols2014; @Venter2014] and our research priority pattern. This is caused by the underlying richness pattern of restricted range vertebrates [@Jenkins2013], which strongly drives all global conservation prioritization analyses that account for species ranges. Nevertheless, not all KBAs within the global priority concentrations became included in the priority set, indicating variation in the importance of KBAs at the regional level (`r figRef("priority_map")`). The most notable difference between the research and KBA priority patterns was low priority KBA density combined with high research-ranks in the Papua New Guinea area. This area is known to be rich in biodiversity and is commonly recognized as a global conservation hotspot [@Jenkins2013]. Even so, it has few unprotected KBAs available for selection. According to our analysis, the area also has very few protected areas, making it even more important as a research priority area. On the other hand, some broad areas, like Central America, have considerably lower overall research-ranks than KBA-ranks, suggesting that comparatively many species in that area are already well covered either by KBAs or the protected area network.
+
+Our prioritization method is based on ranges of threatened species but does not account for other ecological factors influencing the KBA status of an area. This is reflected strongly in the higher proportion of species occurrence -based establishment criteria within the present priority KBAs. This observation is consistent with Di Marco et al. ([-@DiMarco2016]), who found that higher ecological irreplaceability of KBAs was associated with presence and number of restricted-range species. Factors such as importance for species migration can partly explain why some KBAs in our analyses seem to contribute little to the global conservation coverage of species ranges.
+
+Using KBAs as selection units sets additional constraints to the prioritization analyses and thus, inevitably, reduces the theoretical performance of the solution [@Moilanen2009]. In our analyses, this is seen as a difference in the coverage of species ranges by the unconstrained and KBA based solutions (`r tabRef("species_cover")`). There are two main reasons for the difference. First, most KBAs contain both high and low priority areas, which both have to be included to the priority set when KBAs are treated as single entities. Second, there are high priority areas outside the KBA network that, by definition, cannot be identified by the KBA-restricted approach. In our analysis, the second factor dominates, which is shown by the small difference between the performance of the KBA-restricted solution and the solution that forces priorities within the KBAs but allows pixel-based partial selection (`r tabRef("species_cover")`). We emphasize that the pixel-based analysis serves here only as a theoretical reference point for evaluating the effects of constraining selection to  KBAs.
+
+Many Data Deficient species are missed by priority KBAs (`r tabRef("species_cover")`), which is not surprising, because the KBA definition standard particularly emphasizes the importance of confirmed knowledge about species occurrences [@IUCN2016]. Data Deficient species might well be rare and have restricted range size [@Bland2015; @Trindade-Filho2012a]. Presently, it was possible to account for them without compromising representation of endangered species, which implies that including information on Data Deficient species in analyses for research priorities is the safest bet.
+
+We also found that GBIF species observations can be accounted for in research priority analysis without notable loss in coverage of species ranges. Because there were only few observations per species and because GBIF observations are known to be taxonomically and spatially biased [@Meyer2015a], global priority setting cannot be based solely on them. For the same reasons, building reliable species distribution models is not feasible. Nevertheless, we believe that GBIF observations can be used to identify areas with higher confidence of species presence.
+
+Quantitative analysis is mentioned as one of the methods for identifying new sites in the latest KBA standard [@IUCN2016].  Here, the aim of the research priority analysis was to focus attention to sites that might well be valuable for improving the complementarity of the current global KBA network. The actual conservation importance of the sites should be confirmed with ground surveys, and information about species occurrences, habitat quality, costs and social factors, should also be considered in the final delineation process [@IUCN2016; @Margules2000].
+
+Our objective was to rank KBAs in terms of how well they would complement the current protected area network and thus work as an effective expansion for it. By definition, every KBA is important for the species it was established for, and continues to be so, whether or not it was included in the priority set. At the same time, we are not suggesting that all KBAs should be protected. In many cases, the biodiversity value of a KBA could well be maintained with other conservation actions than protection [@IUCN2016]. Nevertheless, most of the top priority KBAs and research priority areas are located in regions where pressures on biodiversity are expected to intensify [@Tilman2017]. Therefore, strengthening the conservation status of these areas that overlap with the ranges of many globally threatened species might be a worthwhile investment for the future.
+
+## Acknowledgments
+P.K. and A.M. were supported by the Academy of Finland Centre of Excellence programme 2012–2017, grant 250444. E.D.M thanks the Academy of Finland 2016–2019, Grant 296524, for support.
+
+## References

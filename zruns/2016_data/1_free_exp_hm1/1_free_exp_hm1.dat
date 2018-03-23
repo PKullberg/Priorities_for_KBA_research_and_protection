@@ -1,0 +1,18 @@
+[Settings]
+removal rule = 2
+warp factor = 2000
+edge removal = 0
+add edge points = 0
+
+mask missing areas = 1
+area mask file = ../../../data/masks/land_mask_nofw_TW_data.tif
+
+use mask = 1
+mask file = ../../../data/masks/hm1_2016.tif
+
+cell area layer = ../../../data/masks/CBIG_GlobalCellAreaR_r16c.tif
+
+[vmat]
+save vmat = vmat_1_free_exp_hm1_DD0
+# load vmat directly and risky = 1
+# load vmat = 1_free_exp_hm1_out/1_free_exp_hm1.ABF_M.vmat_1_free_exp_hm1.gz

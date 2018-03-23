@@ -1,0 +1,4 @@
+This folder contains data on species Redlist status and whether they area purely marine or terrestrial.
+- terrestrial_IUCN_search_2016.csv: results of data search of IUCN Redlist data base (http://www.iucnredlist.org/). Search terms: TAXONNOMY: Amphibia or Aves or Mammalia AND SYSTEM: terrestrial.
+- marin_IUCN_search_2016.csv: results of data search of IUCN Redlist data base (http://www.iucnredlist.org/). Search terms: TAXONNOMY: Amphibia or Aves or Mammalia AND SYSTEM: marine.
+- species_RLI_class.csv: cleaned results of data search of IUCN Redlist data base (http://www.iucnredlist.org/). Search terms: TAXONNOMY: Amphibia or Aves or Mammalia. Two folder remaining: "Status" containing the redlist status of the species and "name" containing the species scientific name without space.
