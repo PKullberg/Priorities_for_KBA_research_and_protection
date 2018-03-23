@@ -1,3 +1,0 @@
-# Using Key Biodiversity Areas to guide effective expansion of the global protected area network
-
-This repository contains scripts for producing the "Using Key Biodiversity Areas to guide effective expansion of the global protected area network" (Peter Kullberg, Enrico di Minin and Atte Moilanen) article. Whole work flow is embedded within the reports/Priorities_for_KBA_research_and_protection.Rmd -file. Nevertheless, running the whole document as such is not recommended as some of the processes take very long time to run and require lot of memory. Before executing the file some data needs to be down loaded (and/or created) from different sources. The data sources are explained within the sub-folders of the data folder.
