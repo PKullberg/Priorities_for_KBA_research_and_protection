@@ -46,15 +46,7 @@ library(pander)
 library(rworldmap)
 library(ggplot2)
 library(rgdal)
-
-# library(geosphere)
-
-# library(plotrix)
-# library(grid)
-# library(gridExtra)
-# library(readxl)
-# library(RColorBrewer)
-# library(kableExtra)
+library(geosphere)
 ```
 
 \n
@@ -96,7 +88,7 @@ Using spatial prioritization, we identify priority areas for the expansion of th
 ## Following code is for setting up the zonation runs
 
 # Get all gbif observations of species that have less than 5% of their range within PAs of KBAs
-# To run, the code requires list of wanted species that was produced beforehand
+# To run, the code requires list of species that was produced beforehand
 source("src/fetch_gbif_observations")
 
 # creates spp files
@@ -223,7 +215,7 @@ unprotected_kba_of_all <- unprotected_KBA_area / land_maks_area_all * 100
 
 ```{r kba_protection_priority_data, echo = F, include = F}
 # In this block:
-# - The original priority maps are cut and rescaled, to contain only unprotected KBAs.
+# - The original priority maps are cut and rescaled to contain only unprotected KBAs.
 # - Binary maps of areas containng 10% of the best unprotected KBAs is produced.
 # - Density for the priority areas is calcualted
 
@@ -231,7 +223,7 @@ unprotected_kba_of_all <- unprotected_KBA_area / land_maks_area_all * 100
 source("../src/clip_rank.R")
 
 ## clip and rescale results to unprotected  KBAs
-unprotected_KBA_z <- raster("../data/masks/non_protected_KBAs_2016.tif") # this used to be this: unprotected_KBA_z <- raster("../data/masks/non_protected_KBAs_2016_threatened_included.tif") check how/if results area affected!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+unprotected_KBA_z <- raster("../data/masks/non_protected_KBAs_2016.tif")
 rank2 <- raster("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/2_kba_priority_hm2_plu.ABF_M.rank.compressed.tif")
 KBA_ranking <- clip_rank(ir = rank2, br = unprotected_KBA_z)
 
@@ -336,6 +328,10 @@ full_gap_row <- as.numeric(plu_curve[min(which(plu_removed > (kba_kink))), ])
 free_gap_row <- as.numeric(free_curve[min(which(landscape_removed > (expansion_kink))), ])
 expansion_gap_row <- as.numeric(plu_curve[min(which(plu_removed > (expansion_kink))), ])
 free_kba_gap_row <- as.numeric(kba_free_curve[min(which(kba_free_removed > (expansion_kink))), ])
+
+# save names of species that do not have observations within KBA network and PAs
+less_than_5pr2 <- as.character(terrestrial_threatened_dd_and_gbif_spp_status[terrestrial_threatened_dd_and_gbif_spp_status$Status != "GBIF", ][full_gap_row > 0.05, 6])
+save(less_than_5pr2, file = "../temp/less_than_5pr2.Rda")
 
 ####### Not run, this is for extracting the 5% species in the prerun zonation analysis ###########
 # # Extract the paths of the gap species
@@ -480,25 +476,14 @@ grid.text("B", x = 0.02, y = 0.474, just = c("left", "top"))
 # This block:
 # - creates a data frame containng species coverage within priority sets
 
-# make a filter for DD and GBIF species to calculate the group means
-spp_info <- read.csv2("../data/New_global_species/species_RLI_class.csv") # The file containing threat status of the spp
-
-# pick scientific names from the spp files
-spp_names <- spp_list_no_gbif[,6]
-spp_names <- sapply(strsplit(as.character(spp_names), split = "_"), function(x) x[length(x) - 1])
-
 # select DD species from "basic spp file"
-is_DD <- sapply(spp_names, function(x) spp_info[grep(x, spp_info[ ,2])[1], 1] == "DD")
+is_DD <- terrestrial_threatened_dd_and_gbif_spp_status == "DD"
 
 # select non DD species from spp files with GBIF points 
-is_DD_GBIF <- rep(F, nrow(spp_list_gbif))
-is_DD_GBIF[1:7228] <- is_DD
-is_DD_GBIF[length(is_DD):nrow(spp_list_gbif)] <- T
+is_DD_GBIF <- terrestrial_threatened_dd_and_gbif_spp_status == "DD" & terrestrial_threatened_dd_and_gbif_spp_status == "GBIF"
 
 # select DD species from spp files with GBIF points
-is_DD_not_GBIF <- rep(F, nrow(spp_list_gbif))
-is_DD_not_GBIF[1:7228] <- is_DD
-is_DD_not_GBIF[length(is_DD):nrow(spp_list_gbif)] <- F
+is_DD_not_GBIF <- terrestrial_threatened_dd_and_gbif_spp_status == "DD" & terrestrial_threatened_dd_and_gbif_spp_status != "GBIF"
 
 # Build a data frame of solution statistics
 range_frame_s <- data.frame(set = c("PAs", "KBAs - 10 %", "KBAs - free 10%", "KBAs - all", "free", "research"), 
