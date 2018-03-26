@@ -1,0 +1,282 @@
+---
+  bibliography: KBA_paper.bib
+csl: apa.csl
+output:
+  word_document:
+  fig_caption: yes
+fig_height: 4
+fig_width: 10.5
+reference_docx: cons_letters_style.docx
+---
+  
+```{r setup, include = FALSE, cache = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache.lazy = TRUE)
+options(scipen = 2, digits = 3)
+
+# formulate inline code outputs according to the apa standards
+knitr::knit_hooks$set(inline = function(x) {
+  if(!is.numeric(x)){ x } else { prettyNum(round(x, 3), big.mark = ",") }
+})
+
+```
+
+```{r caption_options, cache = F}
+# allow active inline references to tables and figures (works also with .odf files)
+source("../src/knitr_ref.R")
+
+# set caption prefixes for tables and figures
+options(figcap.prefix = "Fig.", figcap.sep = ":", figcap.prefix.highlight = "**")
+options(tabcap.prefix = "Table", tabcap.sep = ":", tabcap.prefix.highlight = "**")
+
+```
+
+```{r libraries, include=FALSE, cache = F}
+library(raster)
+library(tidyverse)
+library(sf)
+library(tmap)
+library(ggplot2)
+library(pander)
+```
+
+# Supporting information
+**Using Key Biodiversity Areas to guide effective expansion of the global protected area network**
+  
+  _Peter Kullberg, Enrico di Minin and Atte Moilanen_
+
+\n
+
+```{r load_gbif_data, warning = FALSE}
+# GBIF observation data created in the main file (KBA_report_in_order.Rmd)
+load("../temp/less_than_5pr_ocs_dec_new.Rda")
+
+# filter out empty
+less_than_5pr_ocs <- less_than_5pr_ocs[!is.na(less_than_5pr_ocs$scientificName), ]
+# to spatial
+less_than_5pr_ocs <- st_as_sf(less_than_5pr_ocs, coords = c("lon", "lat"), dim = "XY", crs = 4326)
+
+# remove points further than 25 km from land
+data("World")
+g_map <- st_as_sf(World)
+g_map_b <- st_buffer(g_map, dist = 25000)
+less_than_5pr_ocs_eck4 <- st_transform(less_than_5pr_ocs, crs = "+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m")
+less_than_5pr_ocs_land <-  st_intersection(g_map_b, less_than_5pr_ocs_eck4)
+```
+
+```{r classify_to_IUCN_classes}
+# file containing threat info
+spp_info <- read.csv2("../data/New_global_species/species_RLI_class.csv")
+spp_info <- spp_info %>% mutate(Name = tolower(Name))
+spp_info_clean <- spp_info %>% mutate(Name = gsub("seasonal|seasonalresident|seasonalbreeding|seasonalnonbreeding|passage", "", Name))
+
+# Using spp_file from prioritization analysis, list GBIF species names
+spp_file <- read.table("../zruns/2016_data/general_files/threatened_and_GBIF05_TW_relative_no_marines.spp")
+gbif_names <- spp_file[grep("GBIF_range_obs.tif", spp_file[ ,6]), ] %>% separate(V6, into = letters[1:6], sep = "/") %>% mutate(Name = tolower(gsub("_GBIF_range_obs.tif", "", f))) %>% select(Name)
+lookup_table <- left_join(gbif_names, spp_info_clean) %>% distinct()
+IUCNclass_table <- (table(lookup_table$Status)  / sum(table(lookup_table$Status)))[c(1,3,9,2)] * 100
+
+# Load all gap species and comapre the numbers to those that have obeservations
+load("../temp/less_than_5pr.Rda") # saved within main Rmd
+full_gaps <- tibble(Name = as.character(less_than_5pr)) %>% mutate(Name = tolower(str_split(Name, "_", simplify = T)[ ,6])) %>% select(Name)
+lookup_table2 <- left_join(full_gaps, spp_info) %>% mutate(Name = gsub("seasonal|seasonalresident|seasonalbreeding|seasonalnonbreeding|passage", "", Name)) %>% distinct()
+IUCNclass_table2 <- (table(lookup_table2$Status)  / sum(table(lookup_table2$Status)))[c(1,3,9,2)] * 100
+
+# IUCN calss of all species
+all_spp <- spp_file[-1 * grep("GBIF_range_obs.tif", spp_file[ ,6]), ]  %>%  mutate(Name = tolower(str_split(V6, "_", simplify = T)[ ,6])) %>% select(Name)
+lookup_table3 <- left_join(all_spp, spp_info)  %>% mutate(Name = gsub("seasonal|seasonalresident|seasonalbreeding|seasonalnonbreeding|passage", "", Name)) %>% distinct()
+IUCNclass_table3 <- (table(lookup_table3$Status)  / sum(table(lookup_table3$Status)))[c(1,3,9,2)] * 100
+```
+
+\n
+
+```{r print_IUCNclass}
+class_table <- rbind(paste0(table(lookup_table3$Status)[c(1,3,9,2)], " (", round(IUCNclass_table3, 1), ")"),
+                     paste0(table(lookup_table2$Status)[c(1,3,9,2)], " (", round(IUCNclass_table2, 1), ")"),
+                     paste0(table(lookup_table$Status)[c(1,3,9,2)], " (", round(IUCNclass_table, 1), ")"))
+rownames(class_table) <- c("all species", "less than 5% in KBAs or PAs", "GBIF observations")
+colnames(class_table) <- c("CR (%)", "EN (%)", "VU (%)", "DD (%)")
+
+
+set.caption(tabRef("threate_classes", "Percentage of species belonging to different IUCN threat classes. 'All species' refers to all threatened and Data Deficient terrestrial amphibians, birds and mammals  that have a range map available in the IUCN Red List of Threatened Species. 'Less than 5%' is a subset of the previous group counting only those species that have less than 5% of their range covered by the present KBA or PA networks. 'GBIF observations' refers to species that have less than 5% of their range covered by PAs and KBAs, and in addition have in the GBIF data base at least one observation that is made after 1990 and falls within a 25 km distance of the species range. CR, EN, VU and DD refer to critically endangered, endangered, vulnerable and Data Deficient species, respectively."))
+panderOptions('round', c(1, 1, 1, 1))
+panderOptions('keep.trailing.zeros', T)
+
+# "Species count"" header needs to be added afterwards above CR, EN, VU and DD"
+pander(class_table)
+```
+
+\n
+
+```{r plot_points, fig.cap = figRef("GBIF_points", "GBIF observations of species that have less than 5% of their ranges covered by the KBA and PA networks. Only observations that were made after 1990 and fell within 25 km of the species terrestrial range are shown."), warning = F, fig.height = 6, fig.width = 10}
+tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) +
+  tm_fill(col = "ivory") +
+  tm_borders(col = "gray20") +
+  tm_grid(projection="longlat", labels.size = 0) +
+  
+  tm_shape(less_than_5pr_ocs_land) +
+  tm_dots(col = "blue", size = 0.5) + 
+  
+  # and final formatting
+  tm_format_World(inner.margins = c(.02, .02, .02, .02), outer.margins = rep(0, 4),  between.margin = 0, bg.color="gray97", earth.boundary = TRUE, space.color="white", frame = FALSE)
+```
+
+```{r priority_areas_no_GBIF_data, warning = F}
+# Define size of the priority area
+cell_size <- raster("../data/masks/CBIG_GlobalCellAreaR_r16c.tif")
+wr <- raster("../data/masks/WDPA_raster_2016_nofw.tif")
+wdpa_z_area <- zonal(cell_size, wr, fun = "sum")
+kbar <- raster("../data/masks/non_protected_KBAs_2016.tif")
+kba_z_area <- zonal(cell_size, kbar, fun = "sum")
+land_mask_z <- raster("../data/masks/land_mask_nofw_TW_data.tif")
+land_mask_area <- zonal(cell_size, land_mask_z, fun = "sum")
+
+# this is the cut of value of expansion priority areas
+kba_kink <- 1 - (wdpa_z_area[ ,2] + kba_z_area[ ,2]) / land_mask_area[ ,2]
+
+# Priority rank of the expansion analysis without GBIF data
+kba_expansion_ranking_no_gbif <- raster("../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD.ABF_M.rank.compressed.tif")
+
+# Extract the "expansion areas""
+kba_expansion_ranking_binary_17_no_gbif <- reclassify(kba_expansion_ranking_no_gbif, matrix(c(0, kba_kink - res_exp_17, NA, kba_kink - res_exp_17, kba_kink , 2, kba_kink , 1, NA), 3, 3, byrow = T),  filename = "../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD_17_expansion.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T)
+```
+
+```{r research_priority_density, fig.cap = figRef("research_priority_density", "Distribution of the research priority areas. Maps show the density of research priority areas aggregated into 2 degree cells. Panel A: research priorities using threatened species, data deficient species and GBIF observations. Panel B: research priorities using only threatened species. The figure shows that accounting for Data Deficient species and GBIF observations in the research priority analysis, as described in the main text, does not alter the overall priority pattern significantly. The main difference between the two solutions is the higher number of research priority areas in Africa and the middle parts of tropical South-America when full data is used. The reason for this difference is probably a higher number of small-range Data Deficient species within these areas. For more detailed description of the full data variant (Panel A) see table 1 of the main text."), warning = F, fig.height = 12, fig.width = 10}
+
+# expansion areas WITH gbif and dd data (produced within the main text)
+kba_expansion_ranking_binary_17 <- raster("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/kba_expansion_17_binary_3.tif")
+
+# Agregate priority areas to 2 degree pixels and change to %
+deg2_gbif_priority <- raster::aggregate(kba_expansion_ranking_binary_17_no_gbif, fact = 120, fun = sum)
+crs(deg2_gbif_priority) <- CRS("+init=epsg:4326")
+deg2_threatened_priority <- raster::aggregate(kba_expansion_ranking_binary_17, fact = 120, fun = sum)
+crs(deg2_threatened_priority) <- CRS("+init=epsg:4326")
+
+deg2_gbif_priority <- deg2_gbif_priority  / (120*120) / 2
+deg2_threatened_priority <- deg2_threatened_priority  / (120*120)
+
+deg2_gbif_priority_eck4 <- projectRaster(deg2_gbif_priority, crs = CRS("+proj=eck4 +over"))
+deg2_threatened_priority_eck4 <- projectRaster(deg2_threatened_priority, crs = CRS("+proj=eck4 +over"))
+
+
+# Plots
+threatened_research_priority <- tm_shape(World, projection = CRS("+proj=eck4 +over")) +
+  tm_fill(col = "ivory") +
+  tm_grid(projection = "longlat", labels.size = 0) +
+  
+  tm_shape(deg2_threatened_priority_eck4) +
+  tm_raster(colorNA = NULL, palette = "Reds", breaks = seq(0, 0.6, 0.1)) +
+  
+  tm_shape(World) +
+  tm_borders(col = "gray20") +
+  
+  # and final formatting
+  tm_format_World(inner.margins = c(.02, .02, .0, .02), outer.margins = c(0.05, 0,0,0),  between.margin = 0, bg.color="gray97", earth.boundary = TRUE, space.color="white", frame = FALSE) + tm_legend(show=FALSE)
+
+
+all_research_priority <- tm_shape(World, projection = CRS("+proj=eck4 +over")) +
+  tm_fill(col = "ivory") +
+  tm_grid(projection = "longlat", labels.size = 0) +
+  
+  tm_shape(deg2_gbif_priority_eck4) +
+  tm_raster(colorNA = NULL, palette = "Reds", breaks = seq(0, 0.6, 0.1)) +
+  
+  tm_shape(World) +
+  tm_borders(col = "gray20") +
+  
+  # and final formatting
+  tm_format_World(inner.margins = c(.02, .02, .02, .02), outer.margins = c(0, 0,0,0),  between.margin = 0, bg.color = "gray97", 
+                  earth.boundary = TRUE, space.color = "white", frame = FALSE, legend.position = c("center", -0.15), 
+                  legend.text.size = 1)  + tm_legend(show = F)
+
+
+# arrange plots
+grid.newpage()
+par(lheight = 0.5)
+pushViewport(viewport(x = 1, y = 1.02, width = 1, height = 0.5, just = c("right", "top")))
+print(threatened_research_priority, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+popViewport(n = 1)
+
+pushViewport(viewport(x = 1, y = 0.085, width = 1, height = 0.5, just = c("right", "bottom")))
+print(all_research_priority, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+popViewport(n = 1)
+
+# Draw legend in a very complex way
+pushViewport(viewport(0.15, 0, width = 0.6, height = 0.15, just = c("left", "bottom"),
+                      layout = grid.layout(nrow = 6, ncol = 14, widths = rep(c(1/7 - 0.05, 0.03), 7), heights = c(0.01, 0.2, 0, 0.1, 0.1))))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  "ivory", col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 1))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(6, "Reds")[1], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 3))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(6, "Reds")[2], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 5))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(6, "Reds")[3], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 7))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(6, "Reds")[4], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 9))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(6, "Reds")[5], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 11))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(6, "Reds")[6], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 13))
+# grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  "transparent", col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 1:7))
+
+grid.text("Research priority density (%)", x = 0, just = c("left", "top"), gp = gpar(fontsize = 20), vp = viewport(layout.pos.row = 2, layout.pos.col = 1:4))
+grid.text("no priority", x = 0.5, y = 0.75, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 1))
+grid.text("areas", x = 0.5, y = 0.3, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 1))
+grid.text("0-10", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 3))
+grid.text("10-20", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 5))
+grid.text("20-30", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 7))
+grid.text("30-40", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 9))
+grid.text("40-50", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 11))
+grid.text("50-60", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 13))
+
+popViewport(n = 1)
+
+grid.text("A", x = 0.04, y = 0.985, just = c("left", "top"), gp = gpar(cex = 2))
+grid.text("B", x = 0.04, y = 0.55, just = c("left", "top"), gp = gpar(cex = 2))
+```
+
+\n
+
+```{r data_in_research_priority}
+# Load spp file with 0 weight for DD species (to separate dd species in curves files)
+dd_spp <- read.table("../zruns/2016_data/general_files/threatened_TW_relative_no_marines_DD0.spp")
+basic_spp <- read.table("../zruns/2016_data/general_files/threatened_TW_relative_no_marines.spp")
+final_spp <- read.table("../zruns/2016_data/general_files/threatened_and_GBIF05_TW_relative_no_marines.spp")
+# 
+# # representation-curves for different data setups
+GBIF_curve <- read.table("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/3_new_kba_hm2_GBIF.ABF_M.curves.txt")
+range_curve <- read.table("../zruns/2016_data/3_new_kba_hm2/3_new_kba_hm2_out/3_new_kba_hm2.ABF_M.curves.txt")
+range_dd0_curve <- read.table("../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD.ABF_M.curves.txt")
+
+# subsets different data classes
+GBIF_spp_curve <- GBIF_curve[ ,grep("GBIF_range_obs.tif", final_spp[ ,6]) + 7]
+GBIF_other_curve <- GBIF_curve[ ,8:(min(grep("GBIF_range_obs.tif", final_spp[ ,6]) + 7) - 1)]
+range_other_curve <-  range_curve[ ,8:ncol(range_curve)]
+range_dd0_other_curve <-  range_dd0_curve[ ,8:ncol(range_dd0_curve)]
+
+GBIF_spp_curve <- GBIF_spp_curve[ ,GBIF_spp_curve[1, ] != 0]
+GBIF_other_curve_DD <-  GBIF_other_curve[ ,dd_spp[ ,1] == 0 & GBIF_other_curve[1, ] != 0]
+GBIF_other_curve_notDD <-  GBIF_other_curve[ ,dd_spp[ ,1] == 1 & GBIF_other_curve[1, ] != 0]
+range_other_curve_DD <-  range_other_curve[ ,dd_spp[ ,1] == 0 & range_other_curve[1, ] != 0]
+range_other_curve_notDD <-  range_other_curve[ ,dd_spp[ ,1] == 1 & range_other_curve[1, ] != 0]
+range_dd0_other_curve_DD <-  range_dd0_other_curve[ ,dd_spp[ ,1] == 0 & range_dd0_other_curve[1, ] != 0]
+range_dd0_other_curve_notDD <-  range_dd0_other_curve[ ,dd_spp[ ,1] == 1 & range_dd0_other_curve[1, ] != 0]
+
+range_expansion_row_17 <- as.numeric(range_other_curve[min(which(range_curve[ ,1] > (kba_kink - res_exp_17))), ])
+range_dd0_expansion_row_17 <- as.numeric(range_dd0_other_curve[min(which(range_dd0_curve[ ,1] > (kba_kink - res_exp_17))), ])
+GBIF_expansion_row_17 <- as.numeric(GBIF_other_curve[min(which(range_dd0_curve[ ,1] > (kba_kink - res_exp_17))), ])
+GBIF_spp_expansion_row_17 <- as.numeric(GBIF_spp_curve[min(which(range_dd0_curve[ ,1] > (kba_kink - res_exp_17))), ])
+```
+
+```{r species_representation, warning = F, fig.height = 6.5, fig.width = 10}
+level_table <- data.frame("analysis" = c("Full data", "Ranges only", "Threatened ranges only"),
+                          "mean all" = c(mean(GBIF_expansion_row_17), mean(range_expansion_row_17), mean(range_dd0_expansion_row_17)), 
+                          "mean threatened" = c(mean(GBIF_expansion_row_17[dd_spp[ ,1] == 1]), mean(range_expansion_row_17[dd_spp[ ,1] == 1]), mean(range_dd0_expansion_row_17[dd_spp[ ,1] == 1])), "gap threatened" = c(sum(GBIF_expansion_row_17[dd_spp[ ,1] == 1] == 0), sum(range_expansion_row_17[dd_spp[ ,1] == 1] == 0), sum(range_dd0_expansion_row_17[dd_spp[ ,1] == 1] == 0)),
+                          "mean dd" = c(mean(GBIF_expansion_row_17[dd_spp[ ,1] == 0]), mean(range_expansion_row_17[dd_spp[ ,1] == 0]), mean(range_dd0_expansion_row_17[dd_spp[ ,1] == 0])), "gap dd" = c(sum(GBIF_expansion_row_17[dd_spp[ ,1] == 0] == 0), sum(range_expansion_row_17[dd_spp[ ,1] == 0] == 0), sum(range_dd0_expansion_row_17[dd_spp[ ,1] == 0] == 0)),
+                          "mean gbif" = c(mean(GBIF_spp_expansion_row_17), NA, NA), 
+                          "gap gbif" = c(sum(GBIF_spp_expansion_row_17 == 0), NA, NA))
+
+panderOptions('table.split.table', Inf)
+panderOptions('table.alignment.default', "left")
+panderOptions('keep.line.breaks', TRUE)
+panderOptions('round', 2)
+set.caption(tabRef("comparison_table", "Representation of different biodiversity feature groups within the research priority areas using three different data setups. The 'Full data' analysis refers to the 'Research priority areas' variant of the main text, which uses ranges of threatened and Data Deficient species, and species observations from the GBIF as input data. The other two variants, the ‘ranges only’ and the ‘threatened ranges only‘, are otherwise identical to it, but the first excludes GBIF observations and the second GBIF observations and Data Deficient species ranges.   Representation of Data Deficient species was tracked in all analyses, but they influenced the prioritization itself only in the ‘Full data’ and the ‘ranges only’ variants. 'Mean threatened', 'mean DD' and 'mean gbif' columns refer to mean coverage of species ranges and 'gap threatened', 'gap DD' and 'gap gbif' columns refer to numbers of features with no representation within the research priority areas, protected areas and KBAs. Only small differences between the analysis variants in the mean coverage of threatened species ranges and number of threatened gap species shows that information about the distribution of Data Deficient species and species observations can be accounted for in the research priority analysis without compromising the coverage of threatened species ranges."))
+
+pander(level_table, format = "html", col.names = c("Analysis", "Mean all", "Mean threatened", "Gap threatened", "Mean dd", "Gap dd", "Mean gbif", "Gap gbif"))
+```
