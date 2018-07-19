@@ -1,5 +1,5 @@
 ---
-  bibliography: KBA_paper.bib
+bibliography: KBA_paper.bib
 csl: apa.csl
 output:
   word_document:
@@ -8,13 +8,14 @@ fig_height: 4
 fig_width: 10.5
 reference_docx: cons_letters_style.docx
 ---
-  
+
 ```{r setup, include = FALSE, cache = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(cache = TRUE)
 knitr::opts_chunk$set(cache.lazy = TRUE)
 options(scipen = 2, digits = 3)
+knitr::opts_knit$set(root.dir = "../../KBA-analysis_new/reports")
 
 # formulate inline code outputs according to the apa standards
 knitr::knit_hooks$set(inline = function(x) {
@@ -40,6 +41,7 @@ library(sf)
 library(tmap)
 library(ggplot2)
 library(pander)
+library(grid)
 ```
 
 # Supporting information
@@ -124,29 +126,54 @@ tm_shape(spTransform(World, CRS("+proj=eck4 +over"))) +
 ```
 
 ```{r priority_areas_no_GBIF_data, warning = F}
+
+
+# expansion areas WITH gbif and dd data (produced within the main text)
+kba_expansion_ranking_binary_17 <- raster("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/kba_expansion_17_binary_3.tif")
+
+
 # Define size of the priority area
 cell_size <- raster("../data/masks/CBIG_GlobalCellAreaR_r16c.tif")
 wr <- raster("../data/masks/WDPA_raster_2016_nofw.tif")
 wdpa_z_area <- zonal(cell_size, wr, fun = "sum")
 kbar <- raster("../data/masks/non_protected_KBAs_2016.tif")
 kba_z_area <- zonal(cell_size, kbar, fun = "sum")
+land_mask <- raster("../data/masks/CBIG_LandWater_r16b_int2S.tif")
+land_mask_area_full <- zonal(cell_size, land_mask, fun = "sum")
 land_mask_z <- raster("../data/masks/land_mask_nofw_TW_data.tif")
 land_mask_area <- zonal(cell_size, land_mask_z, fun = "sum")
+priority_kbas <- raster("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_2016.tif")
+priority_kbas_area <- zonal(cell_size, priority_kbas, fun = "sum")
+res_exp_area <- zonal(cell_size, kba_expansion_ranking_binary_17, fun = "sum")
+
+# priority_kbas_area[2,2] / kba_z_area[,2]
+# 
+# wr2 <- raster("../data/masks/WDPA_raster_2016_nofw_all_included.tif")
+# wdpa_area <- zonal(cell_size, wr2, fun = "sum")
+# kbar2 <- raster("../data/masks/non_protected_KBAs_2016_threatened_included.tif")
+# kba_area <- zonal(cell_size, kbar2, fun = "sum")
+# 
+# (wdpa_z_area[,2] + kba_z_area[,2] * (1/3)) / land_mask_area[,2]
+# (wdpa_area[,2] + kba_area[,2]) / land_mask_area_full[,2]
+# wdpa_area[,2] / land_mask_area_full[,2]
+# (wdpa_z_area[,2] ) / land_mask_area[,2] * z_area_correction
 
 # this is the cut of value of expansion priority areas
 kba_kink <- 1 - (wdpa_z_area[ ,2] + kba_z_area[ ,2]) / land_mask_area[ ,2]
+pa_kink <- 1 - (wdpa_z_area[ ,2]) / land_mask_area[ ,2]
+priority_kbas_kink <- 1 - (wdpa_z_area[ ,2] + priority_kbas_area[2 ,2]) / land_mask_area[ ,2]
+z_area_correction <- land_mask_area / land_mask_area_full
+z_area_correction <- z_area_correction[ ,2]
 
 # Priority rank of the expansion analysis without GBIF data
 kba_expansion_ranking_no_gbif <- raster("../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD.ABF_M.rank.compressed.tif")
 
 # Extract the "expansion areas""
-kba_expansion_ranking_binary_17_no_gbif <- reclassify(kba_expansion_ranking_no_gbif, matrix(c(0, kba_kink - res_exp_17, NA, kba_kink - res_exp_17, kba_kink , 2, kba_kink , 1, NA), 3, 3, byrow = T),  filename = "../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD_17_expansion.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T)
+# kba_expansion_ranking_binary_17_no_gbif <- reclassify(kba_expansion_ranking_no_gbif, matrix(c(0, kba_kink - res_exp_17, NA, kba_kink - res_exp_17, kba_kink , 2, kba_kink , 1, NA), 3, 3, byrow = T),  filename = "../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD_17_expansion.tif", format = "GTiff", options = "COMPRESS=DEFLATE", overwrite = T)
+kba_expansion_ranking_binary_17_no_gbif <- raster("../zruns/2016_data/3_new_kba_hm2_noDD/3_new_kba_hm2_noDD_out/3_new_kba_hm2_noDD_17_expansion.tif")
 ```
 
 ```{r research_priority_density, fig.cap = figRef("research_priority_density", "Distribution of the research priority areas. Maps show the density of research priority areas aggregated into 2 degree cells. Panel A: research priorities using threatened species, data deficient species and GBIF observations. Panel B: research priorities using only threatened species. The figure shows that accounting for Data Deficient species and GBIF observations in the research priority analysis, as described in the main text, does not alter the overall priority pattern significantly. The main difference between the two solutions is the higher number of research priority areas in Africa and the middle parts of tropical South-America when full data is used. The reason for this difference is probably a higher number of small-range Data Deficient species within these areas. For more detailed description of the full data variant (Panel A) see table 1 of the main text."), warning = F, fig.height = 12, fig.width = 10}
-
-# expansion areas WITH gbif and dd data (produced within the main text)
-kba_expansion_ranking_binary_17 <- raster("../zruns/2016_data/3_new_kba_hm2_GBIF/3_new_kba_hm2_GBIF_out/kba_expansion_17_binary_3.tif")
 
 # Agregate priority areas to 2 degree pixels and change to %
 deg2_gbif_priority <- raster::aggregate(kba_expansion_ranking_binary_17_no_gbif, fact = 120, fun = sum)
@@ -234,6 +261,9 @@ grid.text("B", x = 0.04, y = 0.55, just = c("left", "top"), gp = gpar(cex = 2))
 \n
 
 ```{r data_in_research_priority}
+res_exp_area <- zonal(cell_size, kba_expansion_ranking_binary_17, fun = "sum")
+res_exp_17 <- res_exp_area[2,2] / land_mask_area[1,2]
+
 # Load spp file with 0 weight for DD species (to separate dd species in curves files)
 dd_spp <- read.table("../zruns/2016_data/general_files/threatened_TW_relative_no_marines_DD0.spp")
 basic_spp <- read.table("../zruns/2016_data/general_files/threatened_TW_relative_no_marines.spp")
@@ -280,3 +310,114 @@ set.caption(tabRef("comparison_table", "Representation of different biodiversity
 
 pander(level_table, format = "html", col.names = c("Analysis", "Mean all", "Mean threatened", "Gap threatened", "Mean dd", "Gap dd", "Mean gbif", "Gap gbif"))
 ```
+
+
+
+```{r research_priority_curves_2, fig.cap = figRef("KBA_performance", "Mean proportional coverage of vertebrate ranges within unprotected KBAs arranged in priority order. Y axis shows mean proportional coverage of vertebrate ranges by protected areas and unprotected KBAs arranged in the priority order given by analysis variant 2 (see table 1 of the main paper). On the left side of the dotted vertical line, the curve shows coveraege within protected areas and on the right side, covereage by the unprotected KBAs. X axis shows proportion of landscape protected. The dashed vetical line shows 10% of the KBA are that was chosen as the priority KBAs in the paper. The 10% limit was chosen becasue KBAs belonging to that top prioruty group show very large potentila for increasing coverage of terestrial vertebrate ranges withn the protected areas compared to the rest of the KBAs. This is indicated by very steep increase in the species coveraege before the 10% and slowr increase after that." ), warning = F, fig.height = 6.5, fig.width = 10}
+
+kba_curve <- read.table("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/2_kba_priority_hm2_plu.ABF_M.curves.txt")
+kba_curve_fit <- kba_curve %>%  mutate(prot = (1 - V1) *  z_area_correction) %>% select(which(.[1, ] != 0)) %>% select(-(1:7))
+kba_curve_fit["mean"] <- apply(kba_curve_fit[which(names(kba_curve_fit) != "prot")], 1, mean)
+
+ggplot(kba_curve_fit, aes(x = prot, y = mean)) + 
+  geom_line(lwd = 1.2) +
+  coord_cartesian(xlim = c((1 - pa_kink) * z_area_correction, .18), ylim = c(0.31, 0.51)) +
+  # scale_x_continuous(limits = c((1 - pa_kink) * z_area_correction, (1 - kba_kink) * z_area_correction)) +
+  theme(legend.position = c(0.18, 0.8), axis.text = element_text(size = 14), axis.title = element_text(size = 15, face="bold"), legend.text = element_text(size = 12)) +
+  labs(x = "Fraction of landscape protected", y = "Mean coverage") +
+
+  scale_linetype_manual(name = "Analysis variant: data group", values = c(1, 1, 1, 2, 2, 3, 3)) +
+  geom_vline(xintercept = (1 - priority_kbas_kink) * z_area_correction, lty = 2) +
+  geom_vline(xintercept = (1 - pa_kink) * z_area_correction, lty = 3)
+```
+
+```{r KBA_CAZ_comparison, fig.cap = figRef("KBA_CAZ_comparison", "Density of global priority KBAs. Figure A: density of 10% priority KBAs using additive benefit function method. Figure B: density of 10% priority KBAs using core area zonation method.  For more detailed description of the analysis variants see table 1 of the main text." ), warning = F, fig.height = 12, fig.width = 10}
+
+# expansion areas WITH gbif and dd data (produced within the main text)
+kba_priority_abf <- raster("../zruns/2016_data/2_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_KBAs_2016.tif")
+kba_priority_caz <- raster("../zruns/2016_data/2b_caz_kba_priority_hm2_plu/2_kba_priority_hm2_plu_out/top_10_caz_KBAs.tif")
+
+# Agregate priority areas to 2 degree pixels and change to %
+deg2_ABF_priority_ns <- raster::aggregate(kba_priority_abf, fact = 120, fun = sum)
+crs(deg2_ABF_priority_ns) <- CRS("+init=epsg:4326")
+deg2_CAZ_priority_ns <- raster::aggregate(kba_priority_caz, fact = 120, fun = sum)
+crs(deg2_CAZ_priority_ns) <- CRS("+init=epsg:4326")
+
+deg2_ABF_priority <- deg2_ABF_priority_ns  / (120*120)
+deg2_CAZ_priority <- deg2_CAZ_priority_ns  / (120*120)
+
+deg2_ABF_priority_eck4 <- projectRaster(deg2_ABF_priority, crs = CRS("+proj=eck4 +over"))
+deg2_CAZ_priority_eck4 <- projectRaster(deg2_CAZ_priority, crs = CRS("+proj=eck4 +over"))
+
+# I could also add histograms and discus in the text that CAZ occupied more cells, but ABF had higher values (more concentrated)
+# hist(deg2_ABF_priority[deg2_ABF_priority != 0], breaks = seq(0,0.3, length.out = 6), ylim = c(0,800))
+# hist(deg2_CAZ_priority[deg2_CAZ_priority != 0], breaks = seq(0,0.3, length.out = 6), ylim = c(0,800))
+
+# Plots
+caz_priority_map <- tm_shape(World, projection = CRS("+proj=eck4 +over")) +
+  tm_fill(col = "ivory") +
+  tm_grid(projection = "longlat", labels.size = 0) +
+  
+  tm_shape(deg2_CAZ_priority_eck4) +
+  tm_raster(colorNA = NULL, palette = "Reds", breaks = seq(0, 0.25, length.out = 7)) +
+  
+  tm_shape(World) +
+  tm_borders(col = "gray20") +
+  
+  # and final formatting
+  tm_format_World(inner.margins = c(.02, .02, .0, .02), outer.margins = c(0.05, 0,0,0),  between.margin = 0, bg.color="gray97", earth.boundary = TRUE, space.color="white", frame = FALSE) + tm_legend(show=FALSE)
+
+
+abf_priority_map <- tm_shape(World, projection = CRS("+proj=eck4 +over")) +
+  tm_fill(col = "ivory") +
+  tm_grid(projection = "longlat", labels.size = 0) +
+  
+  tm_shape(deg2_ABF_priority_eck4) +
+  tm_raster(colorNA = NULL, palette = "Reds", breaks = seq(0, 0.25, length.out = 7)) +
+  
+  tm_shape(World) +
+  tm_borders(col = "gray20") +
+  
+  # and final formatting
+  tm_format_World(inner.margins = c(.02, .02, .02, .02), outer.margins = c(0, 0,0,0),  between.margin = 0, bg.color = "gray97", 
+                  earth.boundary = TRUE, space.color = "white", frame = FALSE, legend.position = c("center", -0.15), 
+                  legend.text.size = 1)  + tm_legend(show = F)
+
+
+# arrange plots
+grid.newpage()
+par(lheight = 0.5)
+pushViewport(viewport(x = 1, y = 1.02, width = 1, height = 0.5, just = c("right", "top")))
+print(abf_priority_map, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+popViewport(n = 1)
+
+pushViewport(viewport(x = 1, y = 0.085, width = 1, height = 0.5, just = c("right", "bottom")))
+print(caz_priority_map, vp = viewport(x = 0.5, y = 0.5, just = c("center", "center"), width = 1, height = 1))
+popViewport(n = 1)
+
+# Draw legend in a very complex way
+pushViewport(viewport(0.15, 0, width = 0.6, height = 0.15, just = c("left", "bottom"),
+                      layout = grid.layout(nrow = 6, ncol = 12, widths = rep(c(1/6 - 0.05, 0.03), 7), heights = c(0.01, 0.2, 0, 0.1, 0.1))))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  "ivory", col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 1))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(5, "Reds")[1], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 3))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(5, "Reds")[2], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 5))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(5, "Reds")[3], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 7))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(5, "Reds")[4], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 9))
+grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  RColorBrewer::brewer.pal(5, "Reds")[5], col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 11))
+# grid.rect(width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill =  "transparent", col =  "black"), vp = viewport(layout.pos.row = 4, layout.pos.col = 1:7))
+
+grid.text("Priority KBA density (%)", x = 0, just = c("left", "top"), gp = gpar(fontsize = 20), vp = viewport(layout.pos.row = 2, layout.pos.col = 1:4))
+grid.text("no priority", x = 0.5, y = 0.75, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 1))
+grid.text("areas", x = 0.5, y = 0.3, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 1))
+grid.text("0-5", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 3))
+grid.text("5-10", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 5))
+grid.text("10-15", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 7))
+grid.text("15-20", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 9))
+grid.text("20-25", x = 0.5, just = c("center"), gp = gpar(fontsize = 17), vp = viewport(layout.pos.row = 5, layout.pos.col = 11))
+
+popViewport(n = 1)
+
+grid.text("A", x = 0.04, y = 0.985, just = c("left", "top"), gp = gpar(cex = 2))
+grid.text("B", x = 0.04, y = 0.55, just = c("left", "top"), gp = gpar(cex = 2))
+```
+
