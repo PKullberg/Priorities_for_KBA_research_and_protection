@@ -1,0 +1,97 @@
+{
+  "profile": "tabular-data-package",
+  "resources": [
+    {
+      "name": "supplementary-file-b-kba-priority-table",
+      "path": "Supplementary-file-B.csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {
+            "name": "ID",
+            "type": "integer",
+            "format": "default",
+            "title": "ID",
+            "description": "Row ID"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "format": "default",
+            "description": "Name of the Key Biodiversity Area as defined in the original data set",
+            "title": "KBA name"
+          },
+          {
+            "name": "country",
+            "type": "string",
+            "format": "default",
+            "description": "The country where the KBA is located\n",
+            "title": "country"
+          },
+          {
+            "name": "priority-rank",
+            "type": "integer",
+            "format": "default",
+            "description": "Priority ranking of the unprotected part of the KBA in terms of increasing the representation of threatened Amphibians, Birds and Mammals in the global protected area network\n",
+            "title": "KBA priority rank"
+          },
+          {
+            "name": "area-km2",
+            "type": "number",
+            "format": "default",
+            "description": "Area of the KBA, calculated from the rasterized KBA dataset. For details see the main text.",
+            "title": "area (km2)"
+          },
+          {
+            "name": "percentage-protected",
+            "type": "number",
+            "format": "default",
+            "description": "Percentage of the KBA surface area that is protected. Protection level is calculated by overlapping the rasterized KBA and PA data sets. For details see the main text.\n",
+            "title": "percentage of surface protected"
+          },
+          {
+            "name": "mean-hii",
+            "type": "number",
+            "format": "default",
+            "description": "Mean Human influence index for the unprotected part of the KBA. For details see the main text.",
+            "title": "mean human influence index"
+          },
+          {
+            "name": "priority-set",
+            "type": "integer",
+            "format": "default",
+            "description": "Indicates if the KBA belongs to the top priority set of KBAs as defined in the paper. For details see the main text.",
+            "title": "priority set"
+          }
+        ]
+      },
+      "title": "KBA priority table",
+      "format": "CSV",
+      "description": "Thisis a supplementary file for Kullberg, P., Di Minin, E. & Moilanen, A. 2019, \"Using Key Biodiversity Areas to guide effective expansion of the global protected area network\" . The file contains Priority ranking of all uprotected Key Biodiversity Areas. For detailed description of data and the prioritization method see the main article."
+    }
+  ],
+  "name": "supplementary-file-b",
+  "title": "supplementary-file-b",
+  "description": "Thisis a supplementary file for Kullberg, P., Di Minin, E. & Moilanen, A. 2019, \"Using Key Biodiversity Areas to guide effective expansion of the global protected area network\" . The file contains Priority ranking of all uprotected Key Biodiversity Areas. For detailed description of data and the prioritization method see the main article.",
+  "contributors": [
+    {
+      "title": "Peter Kullberg",
+      "role": "author"
+    },
+	{
+      "title": "Enrico Di Minin",
+      "role": "author"
+    },
+	{
+      "title": "Atte Moilanen",
+      "role": "author"
+    }
+  ],
+  "licenses": [
+    {
+      "name": "CC-BY-4.0",
+      "title": "Creative Commons Attribution 4.0",
+      "path": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ]
+}
